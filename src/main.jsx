@@ -42,27 +42,43 @@ function Header({ plain = false }) {
 }
 
 function SearchPanel() {
+  const scanTypes = [
+    { id: 'number', label: 'Phone / WhatsApp', placeholder: 'Phone or WhatsApp number', description: 'Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.' },
+    { id: 'message', label: 'Scan a message', placeholder: 'Paste a suspicious WhatsApp, SMS or email message', description: 'Review suspicious WhatsApp, SMS or email text. Remove passwords, PINs and personal information first.' },
+    { id: 'url', label: 'URL / Link', placeholder: 'https://example.co.za', description: 'Check a suspicious website or shortened link. Live phishing and malware intelligence is being integrated.' },
+    { id: 'email', label: 'Email address', placeholder: 'name@example.co.za', description: 'Check an email address for potential risk indicators. Live reputation and exposure lookups are coming soon.' },
+    { id: 'domain', label: 'Domain', placeholder: 'example.co.za', description: 'Explore domain exposure, DNS, certificate and email security checks as they become available.' },
+    { id: 'ip', label: 'IP address', placeholder: '196.1.1.1', description: 'IP reputation and observable exposure checks are planned. No live lookup is currently connected.' },
+  ];
   const [mode, setMode] = useState('number');
-  const [number, setNumber] = useState('');
-  const [message, setMessage] = useState('');
+  const [values, setValues] = useState({});
   const [submitted, setSubmitted] = useState(false);
-
+  const selected = scanTypes.find((type) => type.id === mode);
+  const value = values[mode] || '';
+  const update = (next) => { setValues((previous) => ({ ...previous, [mode]: next })); setSubmitted(false); };
+  const scan = () => setSubmitted(true);
+  const result = !value.trim() ? 'Enter a value to check.' : 'This scan is not yet connected to live threat intelligence. CyberScan has not verified this input or established that it is safe or malicious.';
   return <div className="search-panel">
-    <div className="tabs" role="tablist">
-      <button className={mode === 'number' ? 'active' : ''} onClick={() => { setMode('number'); setSubmitted(false); }} role="tab">Search a number</button>
-      <button className={mode === 'message' ? 'active' : ''} onClick={() => { setMode('message'); setSubmitted(false); }} role="tab">Scan a message</button>
+    <div className="tabs" role="tablist" aria-label="CyberScan scan categories">
+      {scanTypes.map((type) => <button type="button" key={type.id} role="tab" aria-selected={mode === type.id} className={mode === type.id ? 'active' : ''} onClick={() => { setMode(type.id); setSubmitted(false); }}>{type.label}</button>)}
     </div>
-    {mode === 'number' ? <div className="panel-content" role="tabpanel">
-      <p className="panel-lede">Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.</p>
-      <div className="phone-field"><span className="country-code">+27</span><input value={number} onChange={(event) => { setNumber(event.target.value); setSubmitted(false); }} placeholder="Phone number" aria-label="Phone number" /><button className="search-button" aria-label="Search" onClick={() => setSubmitted(true)}><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></button></div>
-      <small>By continuing, you agree to our Terms and Privacy Policy.</small>
-      {submitted && <div className="result-message">{number ? 'Live phone and WhatsApp reputation checks are not connected yet. No conclusion about this number can be made.' : 'Enter a phone number to check.'}</div>}
-    </div> : <div className="panel-content" role="tabpanel">
-      <p className="panel-lede">Paste a suspicious WhatsApp, SMS or email message. Remove passwords, PINs and personal information first.</p>
-      <textarea value={message} onChange={(event) => { setMessage(event.target.value); setSubmitted(false); }} placeholder="Message to scan" aria-label="Message to scan" />
-      <div className="scan-actions"><button className="outline-button" type="button">Paste</button><button className="outline-button" type="button">Screenshot</button><button className="primary-button" onClick={() => setSubmitted(true)}>Check for scam <span>→</span></button></div>
-      {submitted && <div className="result-message">{message ? 'Message submitted in this preview. Live scam intelligence is not connected yet; verify requests independently.' : 'Paste a message to scan.'}</div>}
-    </div>}
+    <div className="panel-content" role="tabpanel">
+      <p className="panel-lede">{selected.description}</p>
+      {mode === 'message' ? <>
+        <textarea value={value} maxLength={5000} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label="Message to scan" />
+        <div className="scan-actions">
+          <button className="outline-button" type="button" onClick={async () => { try { update(await navigator.clipboard.readText()); } catch { setSubmitted(false); } }}>Paste</button>
+          <button className="outline-button" type="button" disabled title="Screenshot scanning is coming soon">Screenshot (soon)</button>
+          <button className="primary-button" type="button" onClick={scan}>Check for scam <span>→</span></button>
+        </div>
+      </> : <div className="phone-field">
+        {mode === 'number' && <span className="country-code">+27</span>}
+        <input value={value} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label={selected.label} type={mode === 'email' ? 'email' : 'text'} />
+        <button type="button" className="search-button" aria-label={`Check ${selected.label}`} onClick={scan}><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></button>
+      </div>}
+      <small>WhatsApp bot integration and live security scanning are in development. Do not submit confidential information.</small>
+      {submitted && <div className="result-message" role="status">{result}</div>}
+    </div>
   </div>;
 }
 
@@ -70,7 +86,7 @@ function Hero() {
   return <main id="home">
     <section className="hero" id="top">
       <div className="hero-inner">
-        <div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line" />Your digital safety partner in <strong>South Africa</strong></div><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Scan suspicious WhatsApp messages, check unknown numbers and spot scam links before you respond, click or pay.</p><SearchPanel /></div>
+        <div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line" />Your digital safety partner in <strong>South Africa</strong></div><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Check WhatsApp scams, suspicious messages, phone numbers, URLs, email addresses, domains and IP addresses—all in one place.</p><SearchPanel /></div>
         <div className="hero-art"><div className="art-glow" /><img src={assetPath('/images/home-hero-poster.webp')} alt="CyberScan mobile security experience preview" /></div>
       </div>
       <div className="hero-wave" />
