@@ -29,8 +29,8 @@ function Header({ plain = false }) {
       <Logo />
       <nav className={open ? 'main-nav open' : 'main-nav'}>
         <a href={appPath('/')}>Home</a>
-        <a href={appPath('/android-app')}>Android App</a>
-        <a href={appPath('/iphone-app')}>iPhone App</a>
+        
+        
         <div className={`nav-dropdown${featuresOpen ? ' open' : ''}`}><button type="button" aria-expanded={featuresOpen} onClick={() => setFeaturesOpen(!featuresOpen)}>Features <Chevron /></button><div className="dropdown-menu">{featureLinks.map((item) => <a href={appPath(item.path)} key={item.path}>{item.label}</a>)}</div></div>
         <a href={appPath('/spam-detector')}>Spam Detector</a>
         <a href={appPath('/report-spam')}>Report Spam/Fraud</a>
@@ -138,11 +138,11 @@ function FeatureItem({ icon, title }) {
 }
 
 function Footer() {
-  return <footer className="footer"><div className="footer-top"><Logo /><p>Identify unknown callers.<br />Stay protected from spam.</p><div className="footer-download"><span>Download Cyberscan</span><a href={appPath('/android-app')}><button type="button">Get started <b>→</b></button></a></div></div><div className="footer-links"><div><h4>Explore</h4><a href={appPath('/')}>Home</a><a href={appPath('/android-app')}>Download Cyberscan</a><a href={appPath('/features/caller-id')}>Learn More</a><a href={appPath('/support')}>Support</a><a href={appPath('/spam-detector')}>Spam Detector</a></div><div><h4>Company</h4><a href={appPath('/support')}>About Us</a><a href={appPath('/support')}>Contact Us</a><a href={appPath('/support')}>Media Kit</a><a href={appPath('/support')}>Blog</a></div><div><h4>More Apps</h4><a href={appPath('/android-app')}>Calendar.AI</a></div><div><h4>Follow Us</h4><div className="socials"><a href={appPath('/support')}>in</a><a href={appPath('/support')}>f</a><a href={appPath('/support')}>𝕏</a></div></div></div><div className="footer-bottom"><span>© 2026 CyberScan. All rights reserved.</span><div><a href={appPath('/support')}>Terms of Use</a><a href={appPath('/support')}>Privacy Policy</a><a href={appPath('/support')}>Cookies Policy</a><a href={appPath('/support')}>Accessibility</a></div></div></footer>;
+  return <footer className="footer"><div className="footer-top"><Logo /><p>Identify unknown callers.<br />Stay protected from spam.</p></div><div className="footer-links"><div><h4>Explore</h4><a href={appPath('/')}>Home</a><a href={appPath('/features/caller-id')}>Learn More</a><a href={appPath('/support')}>Support</a><a href={appPath('/spam-detector')}>Spam Detector</a></div><div><h4>Company</h4><a href={appPath('/support')}>About Us</a><a href={appPath('/support')}>Contact Us</a></div><div><h4>Follow Us</h4><div className="socials"><a href={appPath('/support')}>in</a><a href={appPath('/support')}>f</a><a href={appPath('/support')}>𝕏</a></div></div></div><div className="footer-bottom"><span>© 2026 CyberScan. All rights reserved.</span><div><a href={appPath('/support')}>Terms of Use</a><a href={appPath('/support')}>Privacy Policy</a><a href={appPath('/support')}>Cookies Policy</a><a href={appPath('/support')}>Accessibility</a></div></div></footer>;
 }
 
 const productPages = {
-  '/features/caller-id': { label: 'CALLER ID', title: <>Know who’s calling<br /><span>before you answer.</span></>, body: 'Identify unknown callers instantly with names, photos, locations, and social profiles. Cyberscan gives you the context you need to pick up with confidence.', image: '/images/incoming-call.webp', button: 'Download Cyberscan' },
+  '/features/caller-id': { label: 'CALLER ID', title: <>Know who’s calling<br /><span>before you answer.</span></>, body: 'Identify unknown callers instantly with names, photos, locations, and social profiles. Cyberscan gives you the context you need to pick up with confidence.', image: '/images/incoming-call.webp', button: 'Explore security checks' },
   '/features/spam-blocker': { label: 'SPAM BLOCKER', title: <>Silence spam.<br /><span>Keep your day.</span></>, body: 'Protect yourself from fraud, robocalls, and telemarketers with intelligent spam detection that works quietly in the background.', image: '/images/blocked.webp', button: 'Get protected' },
   '/features/reverse-phone-lookup': { label: 'REVERSE PHONE LOOKUP', title: <>The name behind<br /><span>any number.</span></>, body: 'Search any phone number worldwide and discover useful caller details in seconds, wherever you are.', image: '/images/search.webp', button: 'Search a number' },
   '/features/spam-text-blocker': { label: 'SPAM TEXT BLOCKER', title: <>Read messages<br /><span>with confidence.</span></>, body: 'Detect suspicious links, urgent requests, and impersonation attempts before a scam text catches you off guard.', image: '/images/scan-iphone.webp', button: 'Scan a message' },
@@ -181,7 +181,7 @@ function SupportPage() {
 
 function SigninPage() {
   const [sent, setSent] = useState(false);
-  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}<p className="signin-help">Don't have an account? <a href={appPath('/android-app')}>Download Cyberscan</a></p></section></main></>;
+  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}</section></main></>;
 }
 
 function RoutePage() {
