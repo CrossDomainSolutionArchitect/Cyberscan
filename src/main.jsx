@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -12,6 +12,80 @@ const featureLinks = [
   { label: 'Spam Text Blocker', path: '/features/spam-text-blocker' },
   { label: 'Contact Management', path: '/features/contact-management' },
 ];
+
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const openContactModal = (kind = 'contact') => window.dispatchEvent(new CustomEvent('cyberscan:contact', { detail: kind }));
+
+function ContactModal({ kind, onClose }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+  const [reference, setReference] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState('');
+  const isReport = kind === 'report';
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === 'Escape' && status !== 'sending') onClose(); };
+    document.addEventListener('keydown', onKey);
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
+  }, [onClose, status]);
+  async function submit(event) {
+    event.preventDefault();
+    if (status === 'sending') return;
+    if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) {
+      setError('Email service is not configured yet. Please contact the CyberScan team directly.');
+      setStatus('error');
+      return;
+    }
+    setStatus('sending'); setError('');
+    const composed = isReport ? `Scam / fraud report\\nSuspicious number or link: ${reference || 'Not provided'}\\n\\n${message}` : message;
+    try {
+      const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: EMAILJS_SERVICE_ID,
+          template_id: EMAILJS_TEMPLATE_ID,
+          user_id: EMAILJS_PUBLIC_KEY,
+          template_params: {
+            name: name.trim(),
+            email: email.trim(),
+            reply_to: email.trim(),
+            time: new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' }) + ' SAST',
+            message: composed,
+            subject: isReport ? 'CyberScan scam / fraud report' : 'CyberScan contact enquiry',
+          },
+        }),
+      });
+      if (!response.ok) throw new Error('The email service could not accept your message.');
+      setStatus('sent');
+    } catch (err) {
+      setError('Your message could not be sent. Please try again or contact the team by email.');
+      setStatus('error');
+    }
+  }
+  return <div className="contact-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && status !== 'sending') onClose(); }}>
+    <section className="contact-modal" role="dialog" aria-modal="true" aria-labelledby="contact-modal-title">
+      <button type="button" className="contact-modal-close" aria-label="Close contact form" onClick={onClose} disabled={status === 'sending'}>×</button>
+      <div className="section-label">{isReport ? 'REPORT A SCAM' : 'CONTACT CYBERSCAN'}</div>
+      <h2 id="contact-modal-title">{isReport ? 'Report suspicious activity.' : 'Contact our team.'}</h2>
+      <p>{isReport ? 'Share details for review. Reports do not automatically label any person or number fraudulent.' : 'Send a message to the CyberScan team and we will respond as soon as possible.'}</p>
+      {status === 'sent' ? <div className="contact-modal-success" role="status">Your message has been sent successfully. Thank you for contacting CyberScan.<button type="button" onClick={onClose}>Close</button></div> :
+        <form onSubmit={submit} className="contact-modal-form">
+          <label>Your name<input autoFocus required maxLength={100} value={name} onChange={e => setName(e.target.value)} placeholder="Full name" /></label>
+          <label>Email address<input required type="email" maxLength={180} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" /></label>
+          {isReport && <label>Suspicious number or link (optional)<input maxLength={300} value={reference} onChange={e => setReference(e.target.value)} placeholder="Number, URL or identifier" /></label>}
+          <label>{isReport ? 'What happened?' : 'Your message'}<textarea required maxLength={4000} rows={5} value={message} onChange={e => setMessage(e.target.value)} placeholder={isReport ? 'Describe the suspected scam without including passwords, PINs or sensitive information.' : 'How can we help?'} /></label>
+          <p className="contact-modal-privacy">Do not include passwords, PINs or confidential information. Your details will be sent to CyberScan through EmailJS for responding to your enquiry.</p>
+          {status === 'error' && <div className="contact-modal-error" role="alert">{error}</div>}
+          <button className="blue-button" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending…' : isReport ? 'Send scam report' : 'Send message'} <span aria-hidden="true">→</span></button>
+        </form>}
+    </section>
+  </div>;
+}
 
 function Logo() {
   return <a className="logo" href={appPath('/')} aria-label="Cyberscan home"><img className="logo-image" src={assetPath('/images/Cyberscan_logo.png')} alt="Cyberscan" /></a>;
@@ -32,7 +106,7 @@ function Header({ plain = false }) {
         
         <a href={`${appPath("/")}#apps`}>Features</a>
         <a href={`${appPath("/")}#top`}>Spam Detector</a>
-        <a href={appPath('/report-spam')}>Report Spam/Fraud</a>
+        <button className="nav-modal-trigger" type="button" onClick={() => openContactModal('report')}>Report Scam/Fraud</button>
         <a href={appPath('/support')}>Support</a>
       </nav>
       <div className="nav-actions"><a className="sign-in" href={appPath('/signin')}>Sign in</a><button className="language" type="button">EN <Chevron /></button><button className="menu-button" type="button" aria-label="Open menu" onClick={() => setOpen(!open)}><span /><span /></button></div>
@@ -152,7 +226,7 @@ function FeatureItem({ icon, title }) {
 }
 
 function Footer() {
-  return <footer className="footer"><div className="footer-top"><Logo /><p>Identify unknown callers.<br />Stay protected from spam.</p></div><div className="footer-links"><div><h4>Explore</h4><a href={appPath('/')}>Home</a><a href={appPath('/features/caller-id')}>Learn More</a><a href={appPath('/support')}>Support</a><a href={appPath('/spam-detector')}>Spam Detector</a></div><div><h4>Company</h4><a href={appPath('/support')}>About Us</a><a href="mailto:vernard@cyberscan.co.za">Contact Us</a></div><div><h4>Follow Us</h4><div className="socials"><a href={appPath('/support')}>in</a><a href={appPath('/support')}>f</a><a href={appPath('/support')}>𝕏</a></div></div></div><div className="footer-bottom"><span>© 2026 CyberScan. All rights reserved.</span><div><a href={appPath('/support')}>Terms of Use</a><a href={appPath('/support')}>Privacy Policy</a><a href={appPath('/support')}>Cookies Policy</a><a href={appPath('/support')}>Accessibility</a></div></div></footer>;
+  return <footer className="footer"><div className="footer-top"><Logo /><p>Identify unknown callers.<br />Stay protected from spam.</p></div><div className="footer-links"><div><h4>Explore</h4><a href={appPath('/')}>Home</a><a href={appPath('/features/caller-id')}>Learn More</a><a href={appPath('/support')}>Support</a><a href={`${appPath("/")}#top`}>Spam Detector</a></div><div><h4>Company</h4><a href={appPath('/support')}>About Us</a><button className="footer-contact-trigger" type="button" onClick={() => openContactModal('contact')}>Contact Us</button></div><div><h4>Follow Us</h4><div className="socials"><a href={appPath('/support')}>in</a><a href={appPath('/support')}>f</a><a href={appPath('/support')}>𝕏</a></div></div></div><div className="footer-bottom"><span>© 2026 CyberScan. All rights reserved.</span><div><a href={appPath('/support')}>Terms of Use</a><a href={appPath('/support')}>Privacy Policy</a><a href={appPath('/support')}>Cookies Policy</a><a href={appPath('/support')}>Accessibility</a></div></div></footer>;
 }
 
 const productPages = {
@@ -183,8 +257,8 @@ function SpamDetectorPage() {
 }
 
 function ReportPage() {
-  const [sent, setSent] = useState(false);
-  return <><Header plain /><main className="subpage-main"><section className="form-page"><div className="section-label">REPORT SPAM / FRAUD</div><h1>Help keep the<br /><span>community safe.</span></h1><p>Tell us about a suspicious number or message. Community scam reporting is planned. Reports will require review and will not automatically label a number fraudulent.</p><form className="report-form" onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Phone number<input required placeholder="+1 202 555 0123" /></label><label>What happened?<textarea required placeholder="Share any details that might help..." /></label><button className="blue-button" type="submit">Submit report <span>→</span></button>{sent && <div className="form-success">This is a preview form. Reports are not yet saved or submitted.</div>}</form></section></main><Footer /></>;
+  useEffect(() => { openContactModal('report'); }, []);
+  return <><Header plain /><main className="subpage-main"><section className="form-page"><div className="section-label">REPORT SPAM / FRAUD</div><h1>Help keep the<br /><span>community safe.</span></h1><p>Use the report form to share a suspected scam for review. Reports are not automatically verified.</p><button type="button" className="blue-button" onClick={() => openContactModal('report')}>Open report form <span>→</span></button></section></main><Footer /></>;
 }
 
 function SupportPage() {
@@ -193,7 +267,7 @@ function SupportPage() {
     <section className="about-story"><div className="about-story-media"><img src={assetPath('/images/home-hero-poster.webp')} alt="CyberScan digital security illustration" loading="lazy" /></div><div className="about-story-copy"><div className="section-label">WHO WE ARE</div><h2>Security awareness.<br /><span>Practical digital protection.</span></h2><p>CyberScan is being developed as a unified place to explore digital risk indicators across WhatsApp and SMS messages, unfamiliar phone numbers, suspicious links, email addresses, domains and IP addresses.</p><p>Our focus is particularly relevant to South African SMMEs and underserved communities, where accessible digital safety guidance can support confidence, resilience and responsible technology adoption.</p><p>CyberScan is an emerging platform. Live reputation lookups and threat-intelligence integrations are still in development; current previews do not constitute verified security assessments.</p></div></section>
     <section className="about-mission"><div className="section-label">OUR PURPOSE</div><h2>Making digital safety<br /><span>more accessible.</span></h2><div className="about-mission-grid"><article><span className="about-mission-number">01</span><h3>Awareness</h3><p>Help people recognise phishing, impersonation, suspicious messages and other common online threats.</p></article><article><span className="about-mission-number">02</span><h3>Intelligence</h3><p>Bring relevant checks for numbers, links, email, domains and IP addresses into one accessible experience as integrations mature.</p></article><article><span className="about-mission-number">03</span><h3>Inclusion</h3><p>Design for South African individuals, SMMEs and communities that benefit from practical, understandable cybersecurity guidance.</p></article></div></section>
     <section className="about-vision"><div><div className="section-label">OUR DIRECTION</div><h2>From uncertainty<br /><span>to informed action.</span></h2><p>Our vision is a more cyber-aware digital ecosystem where people and enterprises can assess potential risks before trusting a message, link or unfamiliar digital contact.</p><a className="blue-button inline-button" href={`${appPath('/')}#apps`}>Explore our focus areas <span>→</span></a></div><div className="about-vision-media"><img src={assetPath('/images/incoming-call.webp')} alt="Phone-based digital safety illustration" loading="lazy" /></div></section>
-    <section className="about-contact"><div><div className="section-label">GET IN TOUCH</div><h2>Connect with CyberScan.</h2><p>Interested in digital safety, community awareness or opportunities to collaborate? Contact the CyberScan team.</p></div><a className="about-contact-link" href="mailto:vernard@cyberscan.co.za">Contact our team <span aria-hidden="true">→</span></a></section>
+    <section className="about-contact"><div><div className="section-label">GET IN TOUCH</div><h2>Connect with CyberScan.</h2><p>Interested in digital safety, community awareness or opportunities to collaborate? Contact the CyberScan team.</p></div><button className="about-contact-link" type="button" onClick={() => openContactModal('contact')}>Contact our team <span aria-hidden="true">→</span></button></section>
   </main><Footer /></>;
 }
 
@@ -215,6 +289,14 @@ function RoutePage() {
   return <ProductPage data={productPages[path] || productPages['/features/caller-id']} />;
 }
 
-function App() { return <RoutePage />; }
+function App() {
+  const [modalKind, setModalKind] = useState(null);
+  useEffect(() => {
+    const listener = event => setModalKind(event.detail === 'report' ? 'report' : 'contact');
+    window.addEventListener('cyberscan:contact', listener);
+    return () => window.removeEventListener('cyberscan:contact', listener);
+  }, []);
+  return <><RoutePage />{modalKind && <ContactModal key={modalKind} kind={modalKind} onClose={() => setModalKind(null)} />}</>;
+}
 
 createRoot(document.getElementById('root')).render(<App />);
