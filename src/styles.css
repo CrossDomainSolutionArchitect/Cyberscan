@@ -170,3 +170,10 @@ textarea:focus, .phone-field:focus-within { box-shadow: 0 0 0 3px #0047ab1a; }
 .hero .cyberscan-search .scanner-privacy-note{display:block;color:#8291a5;font-size:10px;line-height:1.5;margin-top:15px}
 .hero .cyberscan-search .result-message{background:#f1f6ff;border:1px solid #d8e6ff;border-radius:9px;padding:12px;color:#28518b;line-height:1.5;font-size:12px;margin-top:14px}
 @media(max-width:540px){.hero .cyberscan-search .tabs button{font-size:10px;min-height:53px;padding:10px 5px}.hero .cyberscan-search .panel-content{padding:19px 16px 21px}.hero .cyberscan-search .scanner-heading{font-size:9px}.hero .cyberscan-search .phone-field input{font-size:13px;min-width:0}}
+
+/* Wider image circle in "Know what's suspicious" feature story. */
+.feature-story .story-art{flex:0 0 min(52vw,590px);width:min(52vw,590px);height:min(52vw,590px);max-width:590px;overflow:visible}
+.feature-story .story-orbit{width:82%;height:82%}
+.feature-story .story-art img{width:100%;max-width:100%;max-height:100%;object-fit:contain}
+@media(max-width:1100px){.feature-story{gap:35px}.feature-story .story-art{flex-basis:min(46vw,490px);width:min(46vw,490px);height:min(46vw,490px)}}
+@media(max-width:650px){.feature-story .story-art{flex:0 0 auto;width:min(90vw,430px);height:min(90vw,430px);max-width:100%}.feature-story .story-art img{max-height:100%}}
