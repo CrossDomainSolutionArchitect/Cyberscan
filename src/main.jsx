@@ -107,7 +107,6 @@ function HeroMedia({ mode }) {
         <div className="phone-preview-foot">Illustration only · Not a live scan</div>
       </div>
     </div>
-    <span className="hero-media-caption">Illustrative screen · Replace with final {data.eyebrow.toLowerCase()} media</span>
   </div>;
 }
 
@@ -122,8 +121,7 @@ function Hero() {
       <div className="hero-wave" />
     </section>
     <FeatureStory />
-    <section className="feature-list" id="apps"><div className="feature-list-intro"><div className="feature-list-intro-copy"><div className="section-label">CYBERSCAN PROTECTION</div><h2>Everything you need to<br /><span>stay protected.</span></h2><p>From suspicious WhatsApp messages to risky links and digital identities, CyberScan brings essential security checks together in one place. Live threat-intelligence integrations are being developed.</p><a className="feature-explore-link" href="#top">Explore security checks <span aria-hidden="true">→</span></a></div><div className="feature-list-media"><div className="feature-list-media-orbit" /><img src={assetPath('/images/scan-iphone.webp')} alt="Illustrative CyberScan phone screen showing a suspicious message review" loading="lazy" /><span className="feature-list-media-caption">Illustrative preview · Not a live scan</span></div></div><div className="feature-list-grid"><FeatureItem icon="◉" title="WhatsApp scam number checks (planned)" /><FeatureItem icon="✦" title="Suspicious message analysis (planned)" /><FeatureItem icon="⌁" title="Spam and scam risk indicators (planned)" /><FeatureItem icon="⌕" title="URL and domain checks (planned)" /><FeatureItem icon="◌" title="Email and IP checks (planned)" /><FeatureItem icon="✓" title="Privacy-first guidance" /><FeatureItem icon="▣" title="SME resilience assessments (planned)" /><FeatureItem icon="⊘" title="Community reports with review (planned)" /><FeatureItem icon="↻" title="WhatsApp scanning bot (planned)" /></div></section>
-    <Livecaller />
+    <section className="feature-list" id="apps"><div className="feature-list-intro"><div className="feature-list-intro-copy"><div className="section-label">CYBERSCAN PROTECTION</div><h2>Everything you need to<br /><span>stay protected.</span></h2><p>From suspicious WhatsApp messages to risky links and digital identities, CyberScan brings essential security checks together in one place. Live threat-intelligence integrations are being developed.</p><a className="feature-explore-link" href="#top">Explore security checks <span aria-hidden="true">→</span></a></div><div className="feature-list-media"><div className="feature-list-media-orbit" /><img src={assetPath('/images/scan-iphone.webp')} alt="Illustrative CyberScan phone screen showing a suspicious message review" loading="lazy" /></div></div><div className="feature-list-grid"><FeatureItem icon="◉" title="WhatsApp scam number checks (planned)" /><FeatureItem icon="✦" title="Suspicious message analysis (planned)" /><FeatureItem icon="⌁" title="Spam and scam risk indicators (planned)" /><FeatureItem icon="⌕" title="URL and domain checks (planned)" /><FeatureItem icon="◌" title="Email and IP checks (planned)" /><FeatureItem icon="✓" title="Privacy-first guidance" /><FeatureItem icon="▣" title="SME resilience assessments (planned)" /><FeatureItem icon="⊘" title="Community reports with review (planned)" /><FeatureItem icon="↻" title="WhatsApp scanning bot (planned)" /></div></section>
   </main>;
 }
 
@@ -137,10 +135,6 @@ function FeatureStory() {
 
 function FeatureItem({ icon, title }) {
   return <div className="feature-item"><span>{icon}</span><p>{title}</p><b>→</b></div>;
-}
-
-function Livecaller() {
-  return <section className="livecaller" id="support"><div className="livecaller-copy"><div className="live-badge"><span />NEW FROM CYBERSCAN TEAM!</div><h2>Meet <em>Livecaller.</em></h2><p>Stay protected with real-time caller ID and spam blocking for every incoming call.</p><p className="live-detail">Livecaller instantly identifies unknown callers, blocks spam, and shows you who's calling, even if they are not in your contacts.</p><button className="white-button" type="button">Get the app <span>→</span></button></div><img src={assetPath('/images/livecaller-screen.webp')} alt="Livecaller app screen" /></section>;
 }
 
 function Footer() {
