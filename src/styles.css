@@ -209,3 +209,37 @@ textarea:focus, .phone-field:focus-within { box-shadow: 0 0 0 3px #0047ab1a; }
 .footer-top > p,.footer-links a{color:#dce9ff}
 .footer-bottom,.footer-bottom a{color:#d1e2ff}
 .footer-links a:hover,.footer-bottom a:hover{color:#fff}
+
+/* CyberScan About Us page, available at /support. */
+.about-page{background:#fff;color:var(--ink)}
+.about-page .section-label{font-weight:800;letter-spacing:1.5px}
+.about-hero{background:var(--blue);color:#fff;overflow:hidden}
+.about-hero-inner{max-width:1250px;min-height:620px;margin:auto;padding:90px 7%;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:center;gap:35px}
+.about-eyebrow{color:#c9ddff;font-size:12px;font-weight:800;letter-spacing:2px;margin-bottom:25px}
+.about-hero h1{font-size:clamp(40px,5.2vw,70px);letter-spacing:-3px;line-height:1.08}
+.about-hero h1 em{color:#c4d9ff;font-style:normal}
+.about-hero p{color:#e3edff;font-size:17px;line-height:1.8;max-width:590px;margin:28px 0}
+.about-hero-link{display:inline-flex;gap:15px;align-items:center;color:#fff;border-bottom:2px solid #a8caff;padding-bottom:9px;font-size:14px;font-weight:800}
+.about-hero-media{display:flex;align-items:center;justify-content:center;min-height:420px;background:radial-gradient(circle,#ffffff20 0 50%,transparent 51%)}
+.about-hero-media img{display:block;width:100%;max-width:450px;max-height:480px;object-fit:contain;filter:drop-shadow(0 16px 25px #00235a55)}
+.about-story,.about-vision{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);align-items:center;gap:clamp(35px,7vw,100px);padding:105px 7%}
+.about-story-media,.about-vision-media{min-height:390px;border-radius:30px;background:#eef4ff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.about-story-media img,.about-vision-media img{display:block;width:100%;max-height:440px;object-fit:contain}
+.about-story h2,.about-mission h2,.about-vision h2,.about-contact h2{font-family:Manrope,sans-serif;font-size:clamp(30px,3.7vw,48px);letter-spacing:-2px;line-height:1.16;margin:15px 0 22px}
+.about-story h2 span,.about-mission h2 span,.about-vision h2 span{color:var(--blue)}
+.about-story p,.about-vision p,.about-contact p{color:#64738a;font-size:15px;line-height:1.85;margin:0 0 17px}
+.about-mission{background:#f5f8ff;padding:90px 7%;text-align:center}
+.about-mission>.section-label,.about-mission>h2{max-width:1100px;margin-left:auto;margin-right:auto}
+.about-mission-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;max-width:1120px;margin:48px auto 0;text-align:left}
+.about-mission-grid article{background:#fff;border:1px solid #e3ecfa;border-radius:18px;padding:32px 27px}
+.about-mission-number{font-size:13px;font-weight:800;color:var(--blue)}
+.about-mission-grid h3{font-family:Manrope,sans-serif;font-size:22px;margin:15px 0}
+.about-mission-grid p{font-size:14px;line-height:1.75;color:#64738a;margin:0}
+.about-vision{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)}
+.about-vision .inline-button{display:inline-flex;margin-top:18px}
+.about-contact{max-width:1120px;margin:0 auto 95px;padding:42px 50px;background:#f2f6ff;border:1px solid #e1eafa;border-radius:22px;display:flex;align-items:center;justify-content:space-between;gap:30px}
+.about-contact h2{margin-bottom:12px}.about-contact p{margin-bottom:0;max-width:620px}
+.about-contact-link{flex:0 0 auto;display:inline-flex;gap:12px;align-items:center;background:var(--blue);color:#fff;padding:16px 20px;border-radius:9px;font-size:13px;font-weight:800}
+.about-hero-link:focus-visible,.about-contact-link:focus-visible{outline:3px solid #8bb6ff;outline-offset:4px}
+@media(max-width:800px){.about-hero-inner{grid-template-columns:1fr;padding:75px 7% 45px;gap:0}.about-hero-media{min-height:310px}.about-hero-media img{max-height:340px}.about-story,.about-vision{grid-template-columns:1fr;padding:75px 7%;gap:35px}.about-story-media,.about-vision-media{min-height:300px}.about-mission-grid{grid-template-columns:1fr}.about-contact{margin:0 7% 75px;padding:35px;flex-direction:column;align-items:flex-start}}
+@media(max-width:520px){.about-hero h1{font-size:42px;letter-spacing:-2px}.about-hero p{font-size:15px}.about-story-media,.about-vision-media{min-height:250px}.about-story-media img,.about-vision-media img{max-height:300px}.about-mission{padding:70px 7%}.about-contact{padding:26px}.about-contact-link{width:100%;justify-content:center}}
