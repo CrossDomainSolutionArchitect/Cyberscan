@@ -121,7 +121,7 @@ function Hero() {
       <div className="hero-wave" />
     </section>
     <FeatureStory />
-    <section className="feature-list" id="apps"><div className="feature-list-intro"><div className="feature-list-intro-copy"><div className="section-label">CYBERSCAN PROTECTION</div><h2>Everything you need to<br /><span>stay protected.</span></h2><p>From suspicious WhatsApp messages to risky links and digital identities, CyberScan brings essential security checks together in one place. Live threat-intelligence integrations are being developed.</p><a className="feature-explore-link" href="#top">Explore security checks <span aria-hidden="true">→</span></a></div><div className="feature-list-media"><div className="feature-list-media-orbit" /><img src={assetPath('/images/scan-iphone.webp')} alt="Illustrative CyberScan phone screen showing a suspicious message review" loading="lazy" /></div></div><div className="feature-list-grid"><FeatureItem icon="◉" title="WhatsApp scam number checks (planned)" /><FeatureItem icon="✦" title="Suspicious message analysis (planned)" /><FeatureItem icon="⌁" title="Spam and scam risk indicators (planned)" /><FeatureItem icon="⌕" title="URL and domain checks (planned)" /><FeatureItem icon="◌" title="Email and IP checks (planned)" /><FeatureItem icon="✓" title="Privacy-first guidance" /><FeatureItem icon="▣" title="SME resilience assessments (planned)" /><FeatureItem icon="⊘" title="Community reports with review (planned)" /><FeatureItem icon="↻" title="WhatsApp scanning bot (planned)" /></div></section>
+    <section className="feature-list" id="apps"><div className="feature-list-intro"><div className="feature-list-intro-copy"><div className="section-label">CYBERSCAN PROTECTION</div><h2>Everything you need to<br /><span>stay protected.</span></h2><p>From suspicious WhatsApp messages to risky links and digital identities, CyberScan brings essential security checks together in one place. Live threat-intelligence integrations are being developed.</p><a className="feature-explore-link" href="#top">Explore security checks <span aria-hidden="true">→</span></a></div><div className="feature-list-media"><div className="feature-list-media-orbit" /><img src={assetPath('/images/scan-iphone.webp')} alt="Illustrative CyberScan phone screen showing a suspicious message review" loading="lazy" /></div></div><div className="feature-list-grid"><FeatureItem icon="phone" title="WhatsApp scam number checks" /><FeatureItem icon="message" title="Suspicious message analysis" /><FeatureItem icon="shield" title="Spam and scam risk indicators" /><FeatureItem icon="link" title="URL and domain checks" /><FeatureItem icon="mail" title="Email and IP checks" /><FeatureItem icon="lock" title="Privacy-first guidance" /><FeatureItem icon="building" title="SME resilience assessments" /><FeatureItem icon="users" title="Community reports with review" /><FeatureItem icon="bot" title="WhatsApp scanning bot" /></div></section>
   </main>;
 }
 
@@ -133,8 +133,23 @@ function FeatureStory() {
   return <section className="feature-story"><div className="story-art"><div className="story-orbit" /><img src={assetPath('/images/scan-iphone.webp')} alt="Illustration of a suspicious message being reviewed on a smartphone" /></div><div className="story-copy"><div className="section-label">CYBERSCAN DIGITAL THREAT INTELLIGENCE</div><h2>Know what’s suspicious,<br /><span>before you trust it.</span></h2><p>CyberScan is building a unified security-checking platform for individuals and South African businesses. Review suspicious WhatsApp and SMS messages, investigate unknown phone numbers and explore risk indicators for links, email addresses, domains and IP addresses—all from one place. Live intelligence integrations are in development.</p><div className="story-points"><div><span className="point-icon">⌕</span><strong>Check phone numbers and WhatsApp scam indicators</strong></div><div><span className="point-icon">⊘</span><strong>Spot suspicious messages and phishing links</strong></div><div><span className="point-icon">↻</span><strong>Explore email, domain and IP security checks</strong></div></div><button className="blue-button" type="button" onClick={() => document.getElementById('top')?.scrollIntoView({ behavior: 'smooth' })}>Explore CyberScan checks <span>→</span></button></div></section>;
 }
 
+const featureIconPaths = {
+  phone: <><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /><path d="m18 7 2 2 3-3" /></>,
+  message: <><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z" /><path d="M8 11h9M8 14h6" /></>,
+  shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /><path d="M12 7v6M12 17h.01" /></>,
+  link: <><path d="M10 13a5 5 0 0 0 7 .5l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 0 0-7-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></>,
+  mail: <><rect x="2" y="5" width="20" height="14" rx="2" /><path d="m3 7 9 7 9-7" /></>,
+  lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
+  building: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3" /></>,
+  users: <><circle cx="9" cy="8" r="3" /><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5v1" /></>,
+  bot: <><rect x="4" y="7" width="16" height="14" rx="3" /><path d="M12 3v4M9 3h6M8 13h.01M16 13h.01M9 17h6" /></>,
+};
+function FeatureIcon({ name }) {
+  return <svg className="feature-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{featureIconPaths[name]}</svg>;
+}
+
 function FeatureItem({ icon, title }) {
-  return <div className="feature-item"><span>{icon}</span><p>{title}</p><b>→</b></div>;
+  return <div className="feature-item"><span className="feature-icon-wrap"><FeatureIcon name={icon} /></span><p>{title}</p></div>;
 }
 
 function Footer() {

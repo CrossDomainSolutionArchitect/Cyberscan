@@ -198,3 +198,9 @@ textarea:focus, .phone-field:focus-within { box-shadow: 0 0 0 3px #0047ab1a; }
 .feature-list .feature-item b{flex:0 0 auto}
 @media(max-width:900px){.feature-list{padding:80px 6% 95px}.feature-list-intro{gap:24px}.feature-list-media{min-height:320px}.feature-list-media img{max-height:320px}.feature-list .feature-list-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px}}
 @media(max-width:650px){.feature-list{padding:70px 6% 85px}.feature-list-intro{grid-template-columns:1fr;gap:15px}.feature-list-intro-copy>p{font-size:15px}.feature-list-media{min-height:290px}.feature-list-media-orbit{width:min(82vw,320px)}.feature-list-media img{max-height:310px;max-width:340px}.feature-list .feature-list-grid{grid-template-columns:1fr;margin-top:28px;gap:0}.feature-list .feature-item:nth-child(n){padding-left:0;padding-right:0;min-height:74px}}
+
+/* Consistent, purpose-built SVG feature icons rather than placeholder glyphs. */
+.feature-list .feature-item .feature-icon-wrap{display:inline-flex;flex:0 0 44px;width:44px;height:44px;align-items:center;justify-content:center;border-radius:12px;background:#eaf2ff;color:var(--blue)}
+.feature-list .feature-svg-icon{display:block;width:24px;height:24px;flex-shrink:0}
+.feature-list .feature-item{gap:15px;min-height:88px}
+.feature-list .feature-item p{font-weight:600;color:#293d59}
