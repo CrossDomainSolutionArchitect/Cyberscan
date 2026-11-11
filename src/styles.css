@@ -107,3 +107,36 @@ textarea:focus, .phone-field:focus-within { box-shadow: 0 0 0 3px #0047ab1a; }
 .search-panel .tabs button { font-size: 11px; padding: 12px 0 10px; white-space: nowrap; }
 .search-panel .scan-actions .outline-button:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 540px) { .search-panel .tabs { column-gap: 12px; padding-left: 17px; padding-right: 17px; } .search-panel .tabs button { font-size: 10px; } }
+
+/* CyberScan hero: preserve the established Sync.ME-inspired appearance,
+   reserve a separate media column, and switch phone illustrations by tab. */
+.hero .hero-inner{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(300px,.88fr);align-items:center;gap:clamp(28px,4vw,70px);padding:125px 6% 115px;min-height:735px}
+.hero .hero-copy{width:100%;min-width:0;z-index:2}
+.hero .hero-subtitle{max-width:540px}
+.hero .search-panel{width:100%;max-width:520px}
+.hero .hero-art{position:relative;top:auto;bottom:auto;right:auto;width:100%;height:auto;min-width:0;display:flex;align-items:center;justify-content:center;z-index:1}
+.hero-media{width:100%;min-height:530px;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;isolation:isolate}
+.hero-media .art-glow{position:absolute;inset:12% 2% auto;width:96%;height:75%;background:#8fbaff55;filter:blur(75px);z-index:-1}
+.hero-phone{width:min(100%,285px);height:515px;padding:11px;border-radius:39px;background:linear-gradient(140deg,#172942,#060d20);box-shadow:0 28px 65px #00226070, inset 0 0 0 2px #8297b8;position:relative;transform:rotate(4deg);animation:cyberscan-phone-enter .35s ease both}
+.phone-notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:19px;border-radius:0 0 13px 13px;background:#0b1425;z-index:3}
+.phone-screen{background:linear-gradient(#f9fcff,#ecf4ff);color:#1c304f;border-radius:29px;height:100%;padding:25px 17px 17px;overflow:hidden}
+.phone-topline{display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:#364968;margin:0 8px 20px}
+.phone-brand{font:800 16px Manrope,sans-serif;display:flex;align-items:center;gap:7px}
+.phone-brand-icon{color:var(--blue);font-size:24px}
+.phone-brand-label{font:700 8px Manrope,sans-serif;color:#4977bb;border:1px solid #b9d1f4;border-radius:6px;padding:4px;margin-left:auto}
+.phone-preview-tag{margin-top:26px;font-size:9px;font-weight:800;letter-spacing:1.2px;color:#5d84b9}
+.phone-preview-icon{display:grid;place-items:center;width:62px;height:62px;border-radius:18px;background:#d9e9ff;color:#146aff;font-size:33px;margin-top:13px}
+.phone-screen h3{font:800 19px Manrope,sans-serif;margin:16px 0 5px;letter-spacing:-.7px}
+.phone-preview-detail{font-size:11px;color:#61758f;overflow-wrap:anywhere;margin:0}
+.phone-preview-status{background:#e2edff;border:1px solid #d2e3fc;border-radius:8px;color:#3165a8;padding:11px 9px;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:700;margin-top:19px}
+.phone-preview-status span{font-size:16px}
+.phone-preview-list{margin-top:13px;display:grid;gap:8px}
+.phone-preview-list>div{background:#fff;border:1px solid #e0eaf7;border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;font-size:10px;color:#3f5879}
+.phone-preview-list>div span{color:#1372d8}.phone-preview-list>div b{margin-left:auto;color:#91a4c2}
+.phone-preview-foot{text-align:center;color:#8192aa;font-size:9px;margin-top:17px}
+.hero-media-caption{margin-top:17px;text-align:center;font-size:11px;color:#dbe8ff}
+@keyframes cyberscan-phone-enter{from{opacity:.3;transform:translateY(12px) rotate(2deg)}to{opacity:1;transform:translateY(0) rotate(4deg)}}
+@media(max-width:1100px){.hero .hero-inner{grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr);gap:25px;padding:110px 4% 100px}.hero-phone{width:260px;height:500px}}
+@media(max-width:850px){.hero .hero-inner{grid-template-columns:1fr;gap:45px;padding:95px 6% 100px;min-height:0}.hero .hero-copy{max-width:620px;margin:auto}.hero .search-panel{max-width:620px}.hero .hero-art{width:100%;height:auto;position:relative;top:auto;bottom:auto;right:auto}.hero-media{min-height:0}.hero-phone{width:285px;height:515px}}
+@media(max-width:540px){.hero .hero-inner{padding:75px 5% 90px;gap:35px}.hero .hero-subtitle{font-size:16px}.hero-phone{width:260px;height:500px}.hero-media-caption{max-width:290px}}
+@media(prefers-reduced-motion:reduce){.hero-phone{animation:none}}
