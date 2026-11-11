@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
+const appPath = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
+const assetPath = appPath;
+
 const featureLinks = [
   { label: 'Caller ID', path: '/features/caller-id' },
   { label: 'Spam Blocker', path: '/features/spam-blocker' },
@@ -11,7 +14,7 @@ const featureLinks = [
 ];
 
 function Logo() {
-  return <a className="logo" href="/" aria-label="Cyberscan home"><img className="logo-image" src="/images/Cyberscan_logo.png" alt="Cyberscan" /></a>;
+  return <a className="logo" href={appPath('/')} aria-label="Cyberscan home"><img className="logo-image" src={assetPath('/images/Cyberscan_logo.png')} alt="Cyberscan" /></a>;
 }
 
 function Chevron() {
@@ -25,15 +28,15 @@ function Header({ plain = false }) {
     <div className="nav-wrap">
       <Logo />
       <nav className={open ? 'main-nav open' : 'main-nav'}>
-        <a href="/">Home</a>
-        <a href="/android-app">Android App</a>
-        <a href="/iphone-app">iPhone App</a>
-        <div className={`nav-dropdown${featuresOpen ? ' open' : ''}`}><button type="button" aria-expanded={featuresOpen} onClick={() => setFeaturesOpen(!featuresOpen)}>Features <Chevron /></button><div className="dropdown-menu">{featureLinks.map((item) => <a href={item.path} key={item.path}>{item.label}</a>)}</div></div>
-        <a href="/spam-detector">Spam Detector</a>
-        <a href="/report-spam">Report Spam/Fraud</a>
-        <a href="/support">Support</a>
+        <a href={appPath('/')}>Home</a>
+        <a href={appPath('/android-app')}>Android App</a>
+        <a href={appPath('/iphone-app')}>iPhone App</a>
+        <div className={`nav-dropdown${featuresOpen ? ' open' : ''}`}><button type="button" aria-expanded={featuresOpen} onClick={() => setFeaturesOpen(!featuresOpen)}>Features <Chevron /></button><div className="dropdown-menu">{featureLinks.map((item) => <a href={appPath(item.path)} key={item.path}>{item.label}</a>)}</div></div>
+        <a href={appPath('/spam-detector')}>Spam Detector</a>
+        <a href={appPath('/report-spam')}>Report Spam/Fraud</a>
+        <a href={appPath('/support')}>Support</a>
       </nav>
-      <div className="nav-actions"><a className="sign-in" href="/signin">Sign in</a><button className="language" type="button">EN <Chevron /></button><button className="menu-button" type="button" aria-label="Open menu" onClick={() => setOpen(!open)}><span /><span /></button></div>
+      <div className="nav-actions"><a className="sign-in" href={appPath('/signin')}>Sign in</a><button className="language" type="button">EN <Chevron /></button><button className="menu-button" type="button" aria-label="Open menu" onClick={() => setOpen(!open)}><span /><span /></button></div>
     </div>
   </header>;
 }
@@ -68,7 +71,7 @@ function Hero() {
     <section className="hero" id="top">
       <div className="hero-inner">
         <div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line" />Trusted by <strong>20M+</strong> people worldwide</div><h1>Find out who<br /><em>called</em></h1><p className="hero-subtitle">Identify any number worldwide</p><SearchPanel /></div>
-        <div className="hero-art"><div className="art-glow" /><img src="/images/home-hero-poster.webp" alt="Cyberscan caller identification on mobile phones" /></div>
+        <div className="hero-art"><div className="art-glow" /><img src={assetPath('/images/home-hero-poster.webp')} alt="Cyberscan caller identification on mobile phones" /></div>
       </div>
       <div className="hero-wave" />
     </section>
@@ -84,7 +87,7 @@ function MessageCard({ label, number, copy, tone }) {
 }
 
 function FeatureStory() {
-  return <section className="feature-story"><div className="story-art"><div className="story-orbit" /><img src="/images/incoming-call.webp" alt="Incoming call identified by Cyberscan" /></div><div className="story-copy"><div className="section-label">CALLER ID & SPAM BLOCKER</div><h2>Know who’s calling,<br /><span>every time.</span></h2><p>Identify unknown callers instantly. Access caller name, location, photos, and even connected social profiles.</p><div className="story-points"><div><span className="point-icon">⌕</span><strong>Identify Unknown Callers Instantly</strong></div><div><span className="point-icon">⊘</span><strong>Block Spam Calls, Robocalls & Telemarketers</strong></div><div><span className="point-icon">↻</span><strong>Contact Management with Profile Photos</strong></div></div><button className="blue-button" type="button">Download for free <span>→</span></button></div></section>;
+  return <section className="feature-story"><div className="story-art"><div className="story-orbit" /><img src={assetPath('/images/incoming-call.webp')} alt="Incoming call identified by Cyberscan" /></div><div className="story-copy"><div className="section-label">CALLER ID & SPAM BLOCKER</div><h2>Know who’s calling,<br /><span>every time.</span></h2><p>Identify unknown callers instantly. Access caller name, location, photos, and even connected social profiles.</p><div className="story-points"><div><span className="point-icon">⌕</span><strong>Identify Unknown Callers Instantly</strong></div><div><span className="point-icon">⊘</span><strong>Block Spam Calls, Robocalls & Telemarketers</strong></div><div><span className="point-icon">↻</span><strong>Contact Management with Profile Photos</strong></div></div><button className="blue-button" type="button">Download for free <span>→</span></button></div></section>;
 }
 
 function FeatureItem({ icon, title }) {
@@ -92,11 +95,11 @@ function FeatureItem({ icon, title }) {
 }
 
 function Livecaller() {
-  return <section className="livecaller" id="support"><div className="livecaller-copy"><div className="live-badge"><span />NEW FROM CYBERSCAN TEAM!</div><h2>Meet <em>Livecaller.</em></h2><p>Stay protected with real-time caller ID and spam blocking for every incoming call.</p><p className="live-detail">Livecaller instantly identifies unknown callers, blocks spam, and shows you who's calling, even if they are not in your contacts.</p><button className="white-button" type="button">Get the app <span>→</span></button></div><img src="/images/livecaller-screen.webp" alt="Livecaller app screen" /></section>;
+  return <section className="livecaller" id="support"><div className="livecaller-copy"><div className="live-badge"><span />NEW FROM CYBERSCAN TEAM!</div><h2>Meet <em>Livecaller.</em></h2><p>Stay protected with real-time caller ID and spam blocking for every incoming call.</p><p className="live-detail">Livecaller instantly identifies unknown callers, blocks spam, and shows you who's calling, even if they are not in your contacts.</p><button className="white-button" type="button">Get the app <span>→</span></button></div><img src={assetPath('/images/livecaller-screen.webp')} alt="Livecaller app screen" /></section>;
 }
 
 function Footer() {
-  return <footer className="footer"><div className="footer-top"><Logo /><p>Identify unknown callers.<br />Stay protected from spam.</p><div className="footer-download"><span>Download Cyberscan</span><a href="/android-app"><button type="button">Get started <b>→</b></button></a></div></div><div className="footer-links"><div><h4>Explore</h4><a href="/">Home</a><a href="/android-app">Download Cyberscan</a><a href="/features/caller-id">Learn More</a><a href="/support">Support</a><a href="/spam-detector">Spam Detector</a></div><div><h4>Company</h4><a href="/support">About Us</a><a href="/support">Contact Us</a><a href="/support">Media Kit</a><a href="/support">Blog</a></div><div><h4>More Apps</h4><a href="/android-app">Calendar.AI</a><a href="/support">Livecaller</a></div><div><h4>Follow Us</h4><div className="socials"><a href="/support">in</a><a href="/support">f</a><a href="/support">𝕏</a></div></div></div><div className="footer-bottom"><span>© 2026 Cyberscan Security Company. All rights reserved.</span><div><a href="/support">Terms of Use</a><a href="/support">Privacy Policy</a><a href="/support">Cookies Policy</a><a href="/support">Accessibility</a></div></div></footer>;
+  return <footer className="footer"><div className="footer-top"><Logo /><p>Identify unknown callers.<br />Stay protected from spam.</p><div className="footer-download"><span>Download Cyberscan</span><a href={appPath('/android-app')}><button type="button">Get started <b>→</b></button></a></div></div><div className="footer-links"><div><h4>Explore</h4><a href={appPath('/')}>Home</a><a href={appPath('/android-app')}>Download Cyberscan</a><a href={appPath('/features/caller-id')}>Learn More</a><a href={appPath('/support')}>Support</a><a href={appPath('/spam-detector')}>Spam Detector</a></div><div><h4>Company</h4><a href={appPath('/support')}>About Us</a><a href={appPath('/support')}>Contact Us</a><a href={appPath('/support')}>Media Kit</a><a href={appPath('/support')}>Blog</a></div><div><h4>More Apps</h4><a href={appPath('/android-app')}>Calendar.AI</a><a href={appPath('/support')}>Livecaller</a></div><div><h4>Follow Us</h4><div className="socials"><a href={appPath('/support')}>in</a><a href={appPath('/support')}>f</a><a href={appPath('/support')}>𝕏</a></div></div></div><div className="footer-bottom"><span>© 2026 Cyberscan Security Company. All rights reserved.</span><div><a href={appPath('/support')}>Terms of Use</a><a href={appPath('/support')}>Privacy Policy</a><a href={appPath('/support')}>Cookies Policy</a><a href={appPath('/support')}>Accessibility</a></div></div></footer>;
 }
 
 const productPages = {
@@ -108,7 +111,7 @@ const productPages = {
 };
 
 function SubpageHero({ label, title, body, image, button }) {
-  return <section className="subpage-hero"><div className="subpage-copy"><div className="section-label">{label}</div><h1>{title}</h1><p>{body}</p><button className="blue-button" type="button">{button} <span>→</span></button></div><div className="subpage-art"><div className="subpage-art-circle" /><img src={image} alt="Cyberscan product preview" /></div></section>;
+  return <section className="subpage-hero"><div className="subpage-copy"><div className="section-label">{label}</div><h1>{title}</h1><p>{body}</p><button className="blue-button" type="button">{button} <span>→</span></button></div><div className="subpage-art"><div className="subpage-art-circle" /><img src={assetPath(image)} alt="Cyberscan product preview" /></div></section>;
 }
 
 function ProductPage({ data }) {
@@ -117,7 +120,7 @@ function ProductPage({ data }) {
 
 function DownloadPage({ platform }) {
   const isAndroid = platform === 'Android';
-  return <><Header plain /><main className="subpage-main"><section className="download-hero"><div className="subpage-copy"><div className="section-label">CYBERSCAN FOR {platform.toUpperCase()}</div><h1>Meet the smarter<br /><span>way to connect.</span></h1><p>Get caller ID, spam blocking, and contact management in one beautiful app made for your phone.</p><button className="blue-button" type="button">Download for {platform} <span>→</span></button><small>Free to download · Premium features available</small></div><div className="download-art"><img src={isAndroid ? '/images/home-hero-poster.webp' : '/images/livecaller-screen.webp'} alt={`${platform} Cyberscan app`} /></div></section><section className="download-features"><div className="section-label">WHY CYBERSCAN</div><h2>Everything your<br /><span>phone should know.</span></h2><div className="protection-grid"><div className="protection-card"><span className="card-icon shield">✓</span><h3>Caller ID</h3><p>See who is calling before you answer.</p></div><div className="protection-card"><span className="card-icon spark">✦</span><h3>Smart protection</h3><p>Block spam and spot scam messages fast.</p></div><div className="protection-card"><span className="card-icon block">⊘</span><h3>Contact management</h3><p>Keep your address book fresh and useful.</p></div></div></section></main><Footer /></>;
+  return <><Header plain /><main className="subpage-main"><section className="download-hero"><div className="subpage-copy"><div className="section-label">CYBERSCAN FOR {platform.toUpperCase()}</div><h1>Meet the smarter<br /><span>way to connect.</span></h1><p>Get caller ID, spam blocking, and contact management in one beautiful app made for your phone.</p><button className="blue-button" type="button">Download for {platform} <span>→</span></button><small>Free to download · Premium features available</small></div><div className="download-art"><img src={assetPath(isAndroid ? '/images/home-hero-poster.webp' : '/images/livecaller-screen.webp')} alt={`${platform} Cyberscan app`} /></div></section><section className="download-features"><div className="section-label">WHY CYBERSCAN</div><h2>Everything your<br /><span>phone should know.</span></h2><div className="protection-grid"><div className="protection-card"><span className="card-icon shield">✓</span><h3>Caller ID</h3><p>See who is calling before you answer.</p></div><div className="protection-card"><span className="card-icon spark">✦</span><h3>Smart protection</h3><p>Block spam and spot scam messages fast.</p></div><div className="protection-card"><span className="card-icon block">⊘</span><h3>Contact management</h3><p>Keep your address book fresh and useful.</p></div></div></section></main><Footer /></>;
 }
 
 function SpamDetectorPage() {
@@ -139,11 +142,12 @@ function SupportPage() {
 
 function SigninPage() {
   const [sent, setSent] = useState(false);
-  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}<p className="signin-help">Don't have an account? <a href="/android-app">Download Cyberscan</a></p></section></main></>;
+  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}<p className="signin-help">Don't have an account? <a href={appPath('/android-app')}>Download Cyberscan</a></p></section></main></>;
 }
 
 function RoutePage() {
-  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const path = (window.location.pathname.startsWith(basePath) ? window.location.pathname.slice(basePath.length) : window.location.pathname).replace(/\/$/, '') || '/';
   if (path === '/') return <><Header /><Hero /><Footer /></>;
   if (path === '/android-app') return <DownloadPage platform="Android" />;
   if (path === '/iphone-app') return <DownloadPage platform="iPhone" />;
