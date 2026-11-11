@@ -41,7 +41,7 @@ function Header({ plain = false }) {
   </header>;
 }
 
-function SearchPanel() {
+function SearchPanel({ mode, setMode }) {
   const scanTypes = [
     { id: 'number', label: 'Phone / WhatsApp', placeholder: 'Phone or WhatsApp number', description: 'Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.' },
     { id: 'message', label: 'Scan a message', placeholder: 'Paste a suspicious WhatsApp, SMS or email message', description: 'Review suspicious WhatsApp, SMS or email text. Remove passwords, PINs and personal information first.' },
@@ -50,7 +50,6 @@ function SearchPanel() {
     { id: 'domain', label: 'Domain', placeholder: 'example.co.za', description: 'Explore domain exposure, DNS, certificate and email security checks as they become available.' },
     { id: 'ip', label: 'IP address', placeholder: '196.1.1.1', description: 'IP reputation and observable exposure checks are planned. No live lookup is currently connected.' },
   ];
-  const [mode, setMode] = useState('number');
   const [values, setValues] = useState({});
   const [submitted, setSubmitted] = useState(false);
   const selected = scanTypes.find((type) => type.id === mode);
@@ -82,12 +81,43 @@ function SearchPanel() {
   </div>;
 }
 
+function HeroMedia({ mode }) {
+  const previews = {
+    number: { eyebrow: 'PHONE & WHATSAPP', icon: '☎', heading: 'Unknown number', detail: '+27 82 ••• ••••', state: 'Reputation lookup preview', lines: ['Number identification', 'Community reports', 'Risk context'] },
+    message: { eyebrow: 'MESSAGE SCAN', icon: '▤', heading: 'Suspicious message', detail: 'Please verify your account now…', state: 'Message analysis preview', lines: ['Urgency signals', 'Impersonation patterns', 'Suspicious requests'] },
+    url: { eyebrow: 'URL & LINK', icon: '↗', heading: 'Check this link', detail: 'https://example.co.za', state: 'URL security preview', lines: ['Phishing indicators', 'Redirect analysis', 'Threat intelligence'] },
+    email: { eyebrow: 'EMAIL ADDRESS', icon: '✉', heading: 'Email reputation', detail: 'contact@example.co.za', state: 'Email security preview', lines: ['Sender reputation', 'Impersonation signals', 'Exposure intelligence'] },
+    domain: { eyebrow: 'DOMAIN SCAN', icon: '◎', heading: 'Domain security', detail: 'example.co.za', state: 'Domain assessment preview', lines: ['DNS configuration', 'Certificate checks', 'Email authentication'] },
+    ip: { eyebrow: 'IP ADDRESS', icon: '⌘', heading: 'IP intelligence', detail: '196.1.1.1', state: 'IP assessment preview', lines: ['Reputation signals', 'Network context', 'Exposure indicators'] },
+  };
+  const data = previews[mode] || previews.number;
+  return <div className="hero-media" aria-live="polite" aria-label={`${data.eyebrow} illustration placeholder`}>
+    <div className="art-glow" />
+    <div className="hero-phone" key={mode}>
+      <div className="phone-notch" />
+      <div className="phone-screen">
+        <div className="phone-topline"><span>9:41</span><span>●●● ▰</span></div>
+        <div className="phone-brand"><span className="phone-brand-icon">◇</span> CyberScan <span className="phone-brand-label">PREVIEW</span></div>
+        <div className="phone-preview-tag">{data.eyebrow}</div>
+        <div className="phone-preview-icon">{data.icon}</div>
+        <h3>{data.heading}</h3>
+        <p className="phone-preview-detail">{data.detail}</p>
+        <div className="phone-preview-status"><span>◌</span>{data.state}</div>
+        <div className="phone-preview-list">{data.lines.map((line) => <div key={line}><span>✓</span>{line}<b>›</b></div>)}</div>
+        <div className="phone-preview-foot">Illustration only · Not a live scan</div>
+      </div>
+    </div>
+    <span className="hero-media-caption">Illustrative screen · Replace with final {data.eyebrow.toLowerCase()} media</span>
+  </div>;
+}
+
 function Hero() {
+  const [heroMode, setHeroMode] = useState('number');
   return <main id="home">
     <section className="hero" id="top">
       <div className="hero-inner">
-        <div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line" />Your digital safety partner in <strong>South Africa</strong></div><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Check WhatsApp scams, suspicious messages, phone numbers, URLs, email addresses, domains and IP addresses—all in one place.</p><SearchPanel /></div>
-        <div className="hero-art"><div className="art-glow" /><img src={assetPath('/images/home-hero-poster.webp')} alt="CyberScan mobile security experience preview" /></div>
+        <div className="hero-copy"><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Check WhatsApp scams, suspicious messages, phone numbers, URLs, email addresses, domains and IP addresses—all in one place.</p><SearchPanel mode={heroMode} setMode={setHeroMode} /></div>
+        <div className="hero-art"><HeroMedia mode={heroMode} /></div>
       </div>
       <div className="hero-wave" />
     </section>
