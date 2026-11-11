@@ -70,8 +70,8 @@ function Hero() {
   return <main id="home">
     <section className="hero" id="top">
       <div className="hero-inner">
-        <div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line" />Digital safety for <strong>South Africa</strong></div><h1>Scan before you<br /><em>trust</em></h1><p className="hero-subtitle">Check suspicious WhatsApp messages, numbers and links.</p><SearchPanel /></div>
-        <div className="hero-art"><div className="art-glow" /><img src={assetPath('/images/home-hero-poster.webp')} alt="Cyberscan caller identification on mobile phones" /></div>
+        <div className="hero-copy"><div className="eyebrow"><span className="eyebrow-line" />Your digital safety partner in <strong>South Africa</strong></div><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Scan suspicious WhatsApp messages, check unknown numbers and spot scam links before you respond, click or pay.</p><SearchPanel /></div>
+        <div className="hero-art"><div className="art-glow" /><img src={assetPath('/images/home-hero-poster.webp')} alt="CyberScan mobile security experience preview" /></div>
       </div>
       <div className="hero-wave" />
     </section>
