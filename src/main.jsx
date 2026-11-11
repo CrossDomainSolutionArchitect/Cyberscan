@@ -13,9 +13,9 @@ const featureLinks = [
   { label: 'Contact Management', path: '/features/contact-management' },
 ];
 
-const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_qc62yz9';
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_3l9lr3v';
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'QqoI47lF6xh2ECf19';
 const openContactModal = (kind = 'contact') => window.dispatchEvent(new CustomEvent('cyberscan:contact', { detail: kind }));
 
 function ContactModal({ kind, onClose }) {
