@@ -57,12 +57,12 @@ function SearchPanel({ mode, setMode }) {
   const update = (next) => { setValues((previous) => ({ ...previous, [mode]: next })); setSubmitted(false); };
   const scan = () => setSubmitted(true);
   const result = !value.trim() ? 'Enter a value to check.' : 'This scan is not yet connected to live threat intelligence. CyberScan has not verified this input or established that it is safe or malicious.';
-  return <div className="search-panel">
+  return <div className="search-panel cyberscan-search" aria-label="CyberScan security scanner">
     <div className="tabs" role="tablist" aria-label="CyberScan scan categories">
       {scanTypes.map((type) => <button type="button" key={type.id} role="tab" aria-selected={mode === type.id} className={mode === type.id ? 'active' : ''} onClick={() => { setMode(type.id); setSubmitted(false); }}>{type.label}</button>)}
     </div>
     <div className="panel-content" role="tabpanel">
-      <p className="panel-lede">{selected.description}</p>
+      <div className="scanner-heading"><span className="scanner-status-dot" /><span>CYBERSCAN SECURITY CHECK</span><span className="scanner-preview-badge">PREVIEW</span></div><p className="panel-lede">{selected.description}</p>
       {mode === 'message' ? <>
         <textarea value={value} maxLength={5000} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label="Message to scan" />
         <div className="scan-actions">
@@ -70,12 +70,12 @@ function SearchPanel({ mode, setMode }) {
           <button className="outline-button" type="button" disabled title="Screenshot scanning is coming soon">Screenshot (soon)</button>
           <button className="primary-button" type="button" onClick={scan}>Check for scam <span>→</span></button>
         </div>
-      </> : <div className="phone-field">
+      </> : <div className="phone-field scanner-input-wrap">
         {mode === 'number' && <span className="country-code">+27</span>}
         <input value={value} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label={selected.label} type={mode === 'email' ? 'email' : 'text'} />
         <button type="button" className="search-button" aria-label={`Check ${selected.label}`} onClick={scan}><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></button>
       </div>}
-      <small>WhatsApp bot integration and live security scanning are in development. Do not submit confidential information.</small>
+      <small className="scanner-privacy-note">♢ Privacy first · Live intelligence coming soon · Do not enter confidential information.</small>
       {submitted && <div className="result-message" role="status">{result}</div>}
     </div>
   </div>;
