@@ -60,10 +60,15 @@ function ContactModal({ kind, onClose }) {
           },
         }),
       });
-      if (!response.ok) throw new Error('The email service could not accept your message.');
+      if (!response.ok) {
+        const details = (await response.text()).slice(0, 350);
+        throw new Error(`EmailJS error ${response.status}: ${details || response.statusText || 'Request rejected'}`);
+      }
       setStatus('sent');
     } catch (err) {
-      setError('Your message could not be sent. Please try again or contact the team by email.');
+      setError(err instanceof TypeError
+        ? 'Could not reach EmailJS. Check your connection, browser extensions, and the allowed website origins in EmailJS.'
+        : (err.message || 'Email delivery failed. Please contact the team directly.'));
       setStatus('error');
     }
   }
