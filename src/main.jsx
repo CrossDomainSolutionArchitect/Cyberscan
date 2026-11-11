@@ -181,7 +181,7 @@ function SupportPage() {
 
 function SigninPage() {
   const [sent, setSent] = useState(false);
-  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}<p className="signin-help">Don't have an account? </p></section></main></>;
+  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}</section></main></>;
 }
 
 function RoutePage() {
