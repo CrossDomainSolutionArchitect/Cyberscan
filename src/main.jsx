@@ -23,7 +23,6 @@ function Chevron() {
 
 function Header({ plain = false }) {
   const [open, setOpen] = useState(false);
-  const [featuresOpen, setFeaturesOpen] = useState(false);
   return <header className={`site-header${plain ? ' plain-header' : ''}`}>
     <div className="nav-wrap">
       <Logo />
@@ -31,8 +30,8 @@ function Header({ plain = false }) {
         <a href={appPath('/')}>Home</a>
         
         
-        <div className={`nav-dropdown${featuresOpen ? ' open' : ''}`}><button type="button" aria-expanded={featuresOpen} onClick={() => setFeaturesOpen(!featuresOpen)}>Features <Chevron /></button><div className="dropdown-menu">{featureLinks.map((item) => <a href={appPath(item.path)} key={item.path}>{item.label}</a>)}</div></div>
-        <a href={appPath('/spam-detector')}>Spam Detector</a>
+        <a href={`${appPath("/")}#apps`}>Features</a>
+        <a href={`${appPath("/")}#top`}>Spam Detector</a>
         <a href={appPath('/report-spam')}>Report Spam/Fraud</a>
         <a href={appPath('/support')}>Support</a>
       </nav>
