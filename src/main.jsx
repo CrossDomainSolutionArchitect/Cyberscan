@@ -123,24 +123,41 @@ function SearchPanel({ mode, setMode }) {
   const scanTypes = [
     { id: 'number', label: 'Phone / WhatsApp', placeholder: 'Phone or WhatsApp number', description: 'Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.' },
     { id: 'message', label: 'Scan a message', placeholder: 'Paste a suspicious WhatsApp, SMS or email message', description: 'Review suspicious WhatsApp, SMS or email text. Remove passwords, PINs and personal information first.' },
-    { id: 'url', label: 'URL / Link', placeholder: 'https://example.co.za', description: 'Check a suspicious website or shortened link. Live phishing and malware intelligence is being integrated.' },
+    { id: 'url', label: 'URL / Link', placeholder: 'https://example.co.za', description: 'Check a suspicious website or shortened link. URL checks require the scanner API; threat reputation requires an active intelligence provider.' },
     { id: 'email', label: 'Email address', placeholder: 'name@example.co.za', description: 'Check an email address for potential risk indicators. Live reputation and exposure lookups are coming soon.' },
     { id: 'domain', label: 'Domain', placeholder: 'example.co.za', description: 'Explore domain exposure, DNS, certificate and email security checks as they become available.' },
     { id: 'ip', label: 'IP address', placeholder: '196.1.1.1', description: 'IP reputation and observable exposure checks are planned. No live lookup is currently connected.' },
   ];
   const [values, setValues] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [scanState, setScanState] = useState({ status: 'idle', data: null, error: '' });
   const selected = scanTypes.find((type) => type.id === mode);
   const value = values[mode] || '';
-  const update = (next) => { setValues((previous) => ({ ...previous, [mode]: next })); setSubmitted(false); };
-  const scan = () => setSubmitted(true);
+  const update = (next) => { setValues((previous) => ({ ...previous, [mode]: next })); setSubmitted(false); setScanState({ status: 'idle', data: null, error: '' }); };
+  const scan = async () => {
+    setSubmitted(true);
+    if (mode !== 'url') return;
+    const endpoint = (import.meta.env.VITE_CYBERSCAN_API_URL || '').replace(/\/$/, '');
+    if (!value.trim() || !endpoint) { setScanState({ status: 'error', data: null, error: !value.trim() ? 'Enter a URL to check.' : 'The URL scanning service has not been deployed yet.' }); return; }
+    setScanState({ status: 'loading', data: null, error: '' });
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 12000);
+      let response;
+      try { response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal }); }
+      finally { clearTimeout(timer); }
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error?.message || 'The scanner could not complete this request.');
+      setScanState({ status: 'done', data, error: '' });
+    } catch (error) { setScanState({ status: 'error', data: null, error: error.name === 'AbortError' ? 'The scan timed out. Please try again.' : (error.message || 'Scanner unavailable.') }); }
+  };
   const result = !value.trim() ? 'Enter a value to check.' : 'This scan is not yet connected to live threat intelligence. CyberScan has not verified this input or established that it is safe or malicious.';
   return <div className="search-panel cyberscan-search" aria-label="CyberScan security scanner">
     <div className="tabs" role="tablist" aria-label="CyberScan scan categories">
-      {scanTypes.map((type) => <button type="button" key={type.id} role="tab" aria-selected={mode === type.id} className={mode === type.id ? 'active' : ''} onClick={() => { setMode(type.id); setSubmitted(false); }}>{type.label}</button>)}
+      {scanTypes.map((type) => <button type="button" key={type.id} role="tab" aria-selected={mode === type.id} className={mode === type.id ? 'active' : ''} onClick={() => { setMode(type.id); setSubmitted(false); setScanState({ status: 'idle', data: null, error: '' }); }}>{type.label}</button>)}
     </div>
     <div className="panel-content" role="tabpanel">
-      <div className="scanner-heading"><span className="scanner-status-dot" /><span>CYBERSCAN SECURITY CHECK</span><span className="scanner-preview-badge">PREVIEW</span></div><p className="panel-lede">{selected.description}</p>
+      <div className="scanner-heading"><span className="scanner-status-dot" /><span>CYBERSCAN SECURITY CHECK</span><span className="scanner-preview-badge">{mode === "url" ? "URL SCANNER" : "PREVIEW"}</span></div><p className="panel-lede">{selected.description}</p>
       {mode === 'message' ? <>
         <textarea value={value} maxLength={5000} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label="Message to scan" />
         <div className="scan-actions">
@@ -154,7 +171,18 @@ function SearchPanel({ mode, setMode }) {
         <button type="button" className="search-button" aria-label={`Check ${selected.label}`} onClick={scan}><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></button>
       </div>}
       <small className="scanner-privacy-note">♢ Privacy first · Live intelligence coming soon · Do not enter confidential information.</small>
-      {submitted && <div className="result-message" role="status">{result}</div>}
+      {mode === 'url' ? <div aria-live="polite">
+        {scanState.status === 'loading' && <div className="result-message" role="status">Checking URL…</div>}
+        {scanState.status === 'error' && <div className="result-message" role="alert">{scanState.error}</div>}
+        {scanState.status === 'done' && <div className="url-scan-result" role="status">
+          <strong>{({malicious:'Threat match detected',suspicious:'Security concern detected',no_known_indicators:'No known threat indicators from completed checks',unknown:'Insufficient evidence'})[scanState.data.verdict] || 'Result unavailable'}</strong>
+          <p>{scanState.data.summary?.hostname} · {scanState.data.coverage?.providers_succeeded || 0} reputation source(s) completed</p>
+          {scanState.data.findings?.map(item => <p key={item.id}><b>{item.title}:</b> {item.description}</p>)}
+          {scanState.data.coverage?.limitations?.map((item,i) => <p key={i}>Limit: {item}</p>)}
+          {scanState.data.recommendations?.map((item,i) => <p key={i}>{item}</p>)}
+          <small>Checked {new Date(scanState.data.checked_at).toLocaleString('en-ZA')}. A clean lookup does not guarantee safety.</small>
+        </div>}
+      </div> : submitted && <div className="result-message" role="status">{result}</div>}
     </div>
   </div>;
 }

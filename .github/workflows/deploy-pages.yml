@@ -28,6 +28,7 @@ jobs:
       - name: Build
         env:
           VITE_BASE_PATH: /
+          VITE_CYBERSCAN_API_URL: ${{ vars.VITE_CYBERSCAN_API_URL }}
           VITE_EMAILJS_SERVICE_ID: ${{ vars.VITE_EMAILJS_SERVICE_ID }}
           VITE_EMAILJS_TEMPLATE_ID: ${{ vars.VITE_EMAILJS_TEMPLATE_ID }}
           VITE_EMAILJS_PUBLIC_KEY: ${{ vars.VITE_EMAILJS_PUBLIC_KEY }}

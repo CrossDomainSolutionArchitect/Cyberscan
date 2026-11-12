@@ -1,0 +1,7 @@
+name = "cyberscan-api"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+# Set WEB_RISK_API_KEY using: npx wrangler secret put WEB_RISK_API_KEY
+# Add api.cyberscan.co.za custom domain in Cloudflare after validation.
