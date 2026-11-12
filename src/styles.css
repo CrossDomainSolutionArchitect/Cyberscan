@@ -266,3 +266,8 @@ textarea:focus, .phone-field:focus-within { box-shadow: 0 0 0 3px #0047ab1a; }
 .contact-modal-success button{display:block;margin-top:16px;background:var(--blue);color:#fff;border:0;border-radius:7px;padding:10px 20px;cursor:pointer}
 .contact-modal-form .blue-button:disabled{opacity:.6;cursor:wait}
 @media(max-width:650px){.nav-modal-trigger{color:var(--ink);font-size:15px;padding:10px;width:100%;text-align:left}.contact-modal{padding:28px 20px}.contact-modal-overlay{align-items:flex-start}}
+
+.url-scan-result { margin-top:16px; padding:15px; border:1px solid #dce6f8; border-radius:10px; background:#f7faff; color:#1b2c47; font-size:12px; line-height:1.55; overflow-wrap:anywhere; }
+.url-scan-result > strong { display:block; font-size:15px; color:#0047ab; }
+.url-scan-result p { margin:8px 0; }
+.url-scan-result small { color:#59677b; }
