@@ -2,12 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "../src/index.js";
 
+const TEST_ENV = {
+  ALLOWED_ORIGINS: "https://cyberscan.co.za,https://www.cyberscan.co.za"
+};
+
 function makeRequest(path, options = {}) {
   return new Request(`http://localhost:8787${path}`, options);
 }
 
+function fetchWorker(request) {
+  return worker.fetch(request, TEST_ENV);
+}
+
 test("GET /v1/health returns HTTP 200", async () => {
-  const response = await worker.fetch(makeRequest("/v1/health"));
+  const response = await fetchWorker(makeRequest("/v1/health"));
   const body = await response.json();
 
   assert.equal(response.status, 200);
@@ -17,7 +25,7 @@ test("GET /v1/health returns HTTP 200", async () => {
 });
 
 test("Unknown endpoint returns HTTP 404", async () => {
-  const response = await worker.fetch(makeRequest("/v1/invalid"));
+  const response = await fetchWorker(makeRequest("/v1/invalid"));
   const body = await response.json();
 
   assert.equal(response.status, 404);
@@ -25,7 +33,7 @@ test("Unknown endpoint returns HTTP 404", async () => {
 });
 
 test("POST /v1/health returns HTTP 405", async () => {
-  const response = await worker.fetch(
+  const response = await fetchWorker(
     makeRequest("/v1/health", { method: "POST" })
   );
 
@@ -37,7 +45,7 @@ test("POST /v1/health returns HTTP 405", async () => {
 
 test("API responses contain security headers", async () => {
   for (const path of ["/v1/health", "/v1/invalid"]) {
-    const response = await worker.fetch(makeRequest(path));
+    const response = await fetchWorker(makeRequest(path));
 
     assert.equal(
       response.headers.get("X-Content-Type-Options"),
@@ -50,7 +58,7 @@ test("API responses contain security headers", async () => {
 });
 
 test("Approved origin receives CORS permission", async () => {
-  const response = await worker.fetch(
+  const response = await fetchWorker(
     makeRequest("/v1/health", {
       headers: { Origin: "https://cyberscan.co.za" }
     })
@@ -63,7 +71,7 @@ test("Approved origin receives CORS permission", async () => {
 });
 
 test("Unapproved origin receives no CORS permission", async () => {
-  const response = await worker.fetch(
+  const response = await fetchWorker(
     makeRequest("/v1/health", {
       headers: { Origin: "https://untrusted.example" }
     })
@@ -76,7 +84,7 @@ test("Unapproved origin receives no CORS permission", async () => {
 });
 
 test("Approved preflight returns HTTP 204", async () => {
-  const response = await worker.fetch(
+  const response = await fetchWorker(
     makeRequest("/v1/health", {
       method: "OPTIONS",
       headers: {
@@ -91,7 +99,7 @@ test("Approved preflight returns HTTP 204", async () => {
 });
 
 test("Unapproved preflight returns HTTP 403", async () => {
-  const response = await worker.fetch(
+  const response = await fetchWorker(
     makeRequest("/v1/health", {
       method: "OPTIONS",
       headers: {
@@ -112,7 +120,7 @@ test("Unapproved preflight returns HTTP 403", async () => {
 });
 
 test("Unsupported preflight header returns HTTP 403", async () => {
-  const response = await worker.fetch(
+  const response = await fetchWorker(
     makeRequest("/v1/health", {
       method: "OPTIONS",
       headers: {
@@ -127,4 +135,38 @@ test("Unsupported preflight header returns HTTP 403", async () => {
 
   assert.equal(response.status, 403);
   assert.equal(body.error.code, "CORS_HEADERS_DENIED");
+});
+
+test("CORS fails closed when allowed origins are not configured", async () => {
+  const request = makeRequest("/v1/health", {
+    headers: {
+      Origin: "https://cyberscan.co.za"
+    }
+  });
+
+  const response = await worker.fetch(request, {});
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("Access-Control-Allow-Origin"),
+    null
+  );
+});
+
+test("Preflight is denied when allowed origins are not configured", async () => {
+  const request = makeRequest("/v1/health", {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://cyberscan.co.za",
+      "Access-Control-Request-Method": "POST"
+    }
+  });
+
+  const response = await worker.fetch(request, {});
+
+  assert.equal(response.status, 403);
+
+  const body = await response.json();
+
+  assert.equal(body.error.code, "CORS_ORIGIN_DENIED");
 });

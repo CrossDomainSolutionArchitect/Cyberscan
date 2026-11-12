@@ -9,9 +9,9 @@ import {
 } from "./middleware/cors.js";
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     try {
-      const preflightResponse = handlePreflight(request);
+      const preflightResponse = handlePreflight(request, env);
 
       if (preflightResponse) {
         return preflightResponse;
@@ -42,7 +42,7 @@ export default {
         );
       }
 
-      return applyCors(request, response);
+      return applyCors(request, response, env);
 
     } catch (error) {
       console.error("Unhandled API error", {
@@ -55,7 +55,8 @@ export default {
           "INTERNAL_SERVER_ERROR",
           "An unexpected server error occurred.",
           500
-        )
+        ),
+        env
       );
     }
   }

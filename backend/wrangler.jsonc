@@ -3,5 +3,8 @@
   "name": "cyberscan-api",
   "main": "src/index.js",
   "compatibility_date": "2026-11-12",
-  "workers_dev": true
+  "workers_dev": true,
+  "vars": {
+    "ALLOWED_ORIGINS": "https://cyberscan.co.za,https://www.cyberscan.co.za"
+  }
 }

@@ -1,17 +1,27 @@
 import { errorResponse } from "../utils/response.js";
 
-const ALLOWED_ORIGINS = new Set([
-  "https://cyberscan.co.za",
-  "https://www.cyberscan.co.za"
-]);
+function getAllowedOrigins(env) {
+  const configured = env?.ALLOWED_ORIGINS;
+
+  if (typeof configured !== "string" || !configured.trim()) {
+    return new Set();
+  }
+
+  return new Set(
+    configured
+      .split(",")
+      .map(origin => origin.trim())
+      .filter(Boolean)
+  );
+}
 
 const ALLOWED_METHODS = new Set(["GET", "POST"]);
 const ALLOWED_HEADERS = new Set(["content-type"]);
 
-export function applyCors(request, response) {
+export function applyCors(request, response, env) {
   const origin = request.headers.get("Origin");
 
-  if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+  if (!origin || !getAllowedOrigins(env).has(origin)) {
     return response;
   }
 
@@ -27,14 +37,14 @@ export function applyCors(request, response) {
   });
 }
 
-export function handlePreflight(request) {
+export function handlePreflight(request, env) {
   if (request.method !== "OPTIONS") {
     return null;
   }
 
   const origin = request.headers.get("Origin");
 
-  if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+  if (!origin || !getAllowedOrigins(env).has(origin)) {
     return errorResponse(
       "CORS_ORIGIN_DENIED",
       "Origin is not permitted.",
