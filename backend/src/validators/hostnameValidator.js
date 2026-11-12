@@ -35,6 +35,7 @@ function isUnsafeIPv4(hostname) {
     (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 168) ||
+    (a === 192 && b === 88 && c === 99) ||
     (a === 192 && b === 0 && c === 0) ||
     (a === 192 && b === 0 && c === 2) ||
     (a === 198 && b >= 18 && b <= 19) ||
@@ -90,6 +91,26 @@ export function validateHostname(hostname) {
       valid: false,
       error: "A public hostname is required."
     };
+  }
+
+  if (ipVersion === 0) {
+    if (host.length > 253) {
+      return {
+        valid: false,
+        error: "Hostname exceeds the maximum DNS length."
+      };
+    }
+
+    const labels = host.split(".");
+
+    const validLabel = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
+    if (labels.some(label => !validLabel.test(label))) {
+      return {
+        valid: false,
+        error: "Hostname contains an invalid DNS label."
+      };
+    }
   }
 
   return {

@@ -24,6 +24,13 @@ export function validateUrl(input) {
     };
   }
 
+  if (value.includes("\\")) {
+    return {
+      valid: false,
+      error: "URLs containing backslashes are not supported."
+    };
+  }
+
   let url;
 
   try {

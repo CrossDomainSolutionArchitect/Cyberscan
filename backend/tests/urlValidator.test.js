@@ -100,3 +100,86 @@ test("normalizes valid URLs", () => {
   assert.equal(result.valid, true);
   assert.equal(result.normalizedUrl, "https://example.com/path");
 });
+
+test("rejects deprecated 6to4 relay IPv4 range", () => {
+  const addresses = [
+    "192.88.99.0",
+    "192.88.99.1",
+    "192.88.99.254",
+    "192.88.99.255"
+  ];
+
+  for (const address of addresses) {
+    const result = validateUrl(`http://${address}`);
+
+    assert.equal(
+      result.valid,
+      false,
+      `Reserved address ${address} must be blocked`
+    );
+  }
+});
+
+test("rejects malformed DNS hostname labels", () => {
+  const invalidUrls = [
+    "https://example..com",
+    "https://-example.com",
+    "https://example-.com",
+    "https://example_com.com"
+  ];
+
+  for (const url of invalidUrls) {
+    assert.equal(
+      validateUrl(url).valid,
+      false,
+      `Malformed hostname must be rejected: ${url}`
+    );
+  }
+});
+
+test("accepts valid DNS hostname formats", () => {
+  const validUrls = [
+    "https://example.com.",
+    "https://a.com",
+    "https://cyberscan.co.za"
+  ];
+
+  for (const url of validUrls) {
+    assert.equal(
+      validateUrl(url).valid,
+      true,
+      `Valid hostname must be accepted: ${url}`
+    );
+  }
+});
+
+test("rejects DNS hostnames exceeding length limits", () => {
+  const oversizedLabel = "a".repeat(64);
+  const oversizedHostname = Array(5).fill("a".repeat(63)).join(".");
+
+  assert.equal(
+    validateUrl(`https://${oversizedLabel}.com`).valid,
+    false
+  );
+
+  assert.equal(
+    validateUrl(`https://${oversizedHostname}`).valid,
+    false
+  );
+});
+
+test("rejects ambiguous backslash URL representations", () => {
+  const invalidUrls = [
+    "https://example.com\\@127.0.0.1",
+    "https:\\\\example.com",
+    "https://example.com/path\\admin"
+  ];
+
+  for (const url of invalidUrls) {
+    assert.equal(
+      validateUrl(url).valid,
+      false,
+      `Backslash URL must be rejected: ${url}`
+    );
+  }
+});
