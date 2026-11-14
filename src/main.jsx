@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -121,7 +121,7 @@ function Header({ plain = false }) {
 
 function SearchPanel({ mode, setMode }) {
   const scanTypes = [
-    { id: 'number', label: 'Phone / WhatsApp', placeholder: 'Phone or WhatsApp number', description: 'Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.' },
+    { id: 'number', label: 'Search a number', placeholder: 'Search any phone or WhatsApp number', description: 'Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.' },
     { id: 'message', label: 'Scan a message', placeholder: 'Paste a suspicious WhatsApp, SMS or email message', description: 'Review suspicious WhatsApp, SMS or email text. Remove passwords, PINs and personal information first.' },
     { id: 'url', label: 'URL / Link', placeholder: 'https://example.co.za', description: 'Check a suspicious website or shortened link. URL checks require the scanner API; threat reputation requires an active intelligence provider.' },
     { id: 'email', label: 'Email address', placeholder: 'name@example.co.za', description: 'Check an email address for potential risk indicators. Live reputation and exposure lookups are coming soon.' },
@@ -129,48 +129,91 @@ function SearchPanel({ mode, setMode }) {
     { id: 'ip', label: 'IP address', placeholder: '196.1.1.1', description: 'IP reputation and observable exposure checks are planned. No live lookup is currently connected.' },
   ];
   const [values, setValues] = useState({});
+  const requestRef = useRef(null);
+  const tabsRef = useRef([]);
+  useEffect(() => () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+  }, []);
   const [submitted, setSubmitted] = useState(false);
   const [scanState, setScanState] = useState({ status: 'idle', data: null, error: '' });
   const selected = scanTypes.find((type) => type.id === mode);
   const value = values[mode] || '';
-  const update = (next) => { setValues((previous) => ({ ...previous, [mode]: next })); setSubmitted(false); setScanState({ status: 'idle', data: null, error: '' }); };
+  const resetScan = () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setSubmitted(false);
+    setScanState({ status: 'idle', data: null, error: '' });
+  };
+  const update = (next) => {
+    resetScan();
+    setValues((previous) => ({ ...previous, [mode]: next }));
+  };
+  const selectMode = (nextMode) => {
+    if (nextMode !== mode) { resetScan(); setMode(nextMode); }
+  };
+  const handleTabKey = (event, index) => {
+    let next;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % scanTypes.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + scanTypes.length) % scanTypes.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = scanTypes.length - 1;
+    else return;
+    event.preventDefault();
+    selectMode(scanTypes[next].id);
+    tabsRef.current[next]?.focus();
+  };
   const scan = async () => {
+    if (requestRef.current) return;
     setSubmitted(true);
     if (mode !== 'url') return;
     const endpoint = (import.meta.env.VITE_CYBERSCAN_API_URL || '').replace(/\/$/, '');
     if (!value.trim() || !endpoint) { setScanState({ status: 'error', data: null, error: !value.trim() ? 'Enter a URL to check.' : 'The URL scanning service has not been deployed yet.' }); return; }
     setScanState({ status: 'loading', data: null, error: '' });
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), 12000);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
-      let response;
-      try { response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal }); }
-      finally { clearTimeout(timer); }
+      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal });
       const data = await response.json();
+      if (requestRef.current !== controller) return;
       if (!response.ok) throw new Error(data?.error?.message || 'The scanner could not complete this request.');
+      if (!data || typeof data !== 'object' || !['malicious', 'suspicious', 'no_known_indicators', 'unknown'].includes(data.verdict)
+        || (data.findings != null && (!Array.isArray(data.findings) || data.findings.some(item => !item || typeof item.title !== 'string' || typeof item.description !== 'string')))
+        || (data.coverage?.limitations != null && (!Array.isArray(data.coverage.limitations) || data.coverage.limitations.some(item => typeof item !== 'string')))
+        || (data.recommendations != null && (!Array.isArray(data.recommendations) || data.recommendations.some(item => typeof item !== 'string')))) {
+        throw new Error('The scanner returned an unsupported result.');
+      }
       setScanState({ status: 'done', data, error: '' });
-    } catch (error) { setScanState({ status: 'error', data: null, error: error.name === 'AbortError' ? 'The scan timed out. Please try again.' : (error.message || 'Scanner unavailable.') }); }
+    } catch (error) {
+      if (requestRef.current === controller) setScanState({ status: 'error', data: null, error: error.name === 'AbortError' ? 'The scan timed out. Please try again.' : (error.message || 'Scanner unavailable.') });
+    } finally {
+      clearTimeout(timer);
+      if (requestRef.current === controller) requestRef.current = null;
+    }
   };
   const result = !value.trim() ? 'Enter a value to check.' : 'This scan is not yet connected to live threat intelligence. CyberScan has not verified this input or established that it is safe or malicious.';
   return <div className="search-panel cyberscan-search" aria-label="CyberScan security scanner">
     <div className="tabs" role="tablist" aria-label="CyberScan scan categories">
-      {scanTypes.map((type) => <button type="button" key={type.id} role="tab" aria-selected={mode === type.id} className={mode === type.id ? 'active' : ''} onClick={() => { setMode(type.id); setSubmitted(false); setScanState({ status: 'idle', data: null, error: '' }); }}>{type.label}</button>)}
+      {scanTypes.map((type, index) => <button type="button" key={type.id} id={`scanner-tab-${type.id}`} ref={node => { tabsRef.current[index] = node; }} role="tab" aria-controls="scanner-panel" aria-selected={mode === type.id} tabIndex={mode === type.id ? 0 : -1} className={mode === type.id ? 'active' : ''} onKeyDown={event => handleTabKey(event, index)} onClick={() => selectMode(type.id)}>{type.label}</button>)}
     </div>
-    <div className="panel-content" role="tabpanel">
-      <div className="scanner-heading"><span className="scanner-status-dot" /><span>CYBERSCAN SECURITY CHECK</span><span className="scanner-preview-badge">{mode === "url" ? "URL SCANNER" : "PREVIEW"}</span></div><p className="panel-lede">{selected.description}</p>
+    <div className="panel-content" id="scanner-panel" role="tabpanel" aria-labelledby={`scanner-tab-${mode}`}>
+      <form className="scanner-form" onSubmit={event => { event.preventDefault(); void scan(); }} noValidate>
       {mode === 'message' ? <>
-        <textarea value={value} maxLength={5000} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label="Message to scan" />
+        <textarea value={value} maxLength={5000} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label="Message to scan" aria-describedby="scanner-description scanner-privacy" />
         <div className="scan-actions">
-          <button className="outline-button" type="button" onClick={async () => { try { update(await navigator.clipboard.readText()); } catch { setSubmitted(false); } }}>Paste</button>
+          <button className="outline-button" type="button" onClick={async () => { try { update((await navigator.clipboard.readText()).slice(0, 5000)); } catch { setSubmitted(false); } }}>Paste</button>
           <button className="outline-button" type="button" disabled title="Screenshot scanning is coming soon">Screenshot (soon)</button>
-          <button className="primary-button" type="button" onClick={scan}>Check for scam <span>→</span></button>
+          <button className="primary-button" type="submit">Check for scam <span aria-hidden="true">→</span></button>
         </div>
       </> : <div className="phone-field scanner-input-wrap">
-        {mode === 'number' && <span className="country-code">+27</span>}
-        <input value={value} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label={selected.label} type={mode === 'email' ? 'email' : 'text'} />
-        <button type="button" className="search-button" aria-label={`Check ${selected.label}`} onClick={scan}><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg></button>
+        <span className="country-code scanner-prefix" aria-hidden="true">{mode === 'number' ? '+27' : <svg viewBox="0 0 24 24" className="scanner-prefix-icon">{mode === 'email' ? <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></> : mode === 'ip' ? <><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 20h8m-4-4v4" /></> : <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c5 5 5 13 0 18m0-18c-5 5-5 13 0 18" /></>}</svg>}</span>
+        <input value={value} onChange={(event) => update(event.target.value)} placeholder={selected.placeholder} aria-label={mode === 'number' ? 'South African phone or WhatsApp number (+27)' : selected.label} aria-describedby="scanner-description scanner-privacy" type={mode === 'email' ? 'email' : 'text'} inputMode={mode === 'number' ? 'tel' : mode === 'url' || mode === 'domain' ? 'url' : mode === 'email' ? 'email' : 'text'} autoComplete="off" autoCapitalize="none" spellCheck={false} />
+        <button type="submit" className="search-button" aria-label={`Check ${selected.label}`} aria-busy={scanState.status === 'loading'} disabled={scanState.status === 'loading'}><svg viewBox="0 0 42 36" aria-hidden="true"><circle cx="15" cy="19" r="10" /><path d="m22.5 26.5 8 8" /><path className="scan-sparkle" d="M31 1c1.3 7 4.5 10.2 11 11-6.5.8-9.7 4-11 11-1.3-7-4.5-10.2-11-11 6.5-.8 9.7-4 11-11Z" /></svg></button>
       </div>}
-      <small className="scanner-privacy-note">♢ Privacy first · Live intelligence coming soon · Do not enter confidential information.</small>
+      </form>
+      <p className="panel-lede" id="scanner-description">{selected.description}</p>
+      <small className="scanner-privacy-note" id="scanner-privacy">Privacy first · Do not enter confidential information.</small>
       {mode === 'url' ? <div aria-live="polite">
         {scanState.status === 'loading' && <div className="result-message" role="status">Checking URL…</div>}
         {scanState.status === 'error' && <div className="result-message" role="alert">{scanState.error}</div>}

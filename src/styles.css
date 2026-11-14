@@ -271,3 +271,112 @@ textarea:focus, .phone-field:focus-within { box-shadow: 0 0 0 3px #0047ab1a; }
 .url-scan-result > strong { display:block; font-size:15px; color:#0047ab; }
 .url-scan-result p { margin:8px 0; }
 .url-scan-result small { color:#59677b; }
+/* Reference-inspired CyberScan search: preserve all six scan categories. */
+.hero .cyberscan-search {
+  width: 100%; max-width: 100%; min-height: 0;
+  color: #fff; background: transparent; border: 0;
+  border-radius: 0; box-shadow: none; overflow: visible;
+}
+.hero .cyberscan-search .tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0; padding: 0; border: 0; background: transparent;
+}
+.hero .cyberscan-search .tabs button,
+.hero .cyberscan-search .tabs button:nth-child(-n+3),
+.hero .cyberscan-search .tabs button:nth-child(3n) {
+  background: transparent; border: 0; border-bottom: 1px solid #ffffff50;
+  color: #d7e7ff; font-family: Manrope, sans-serif;
+  font-size: clamp(12px, 1.15vw, 15px); font-weight: 700;
+  min-height: 47px; padding: 12px 6px 14px; line-height: 1.3;
+}
+.hero .cyberscan-search .tabs button:hover { background: #ffffff0e; color: #fff; }
+.hero .cyberscan-search .tabs button.active { background: transparent; color: #fff; }
+.hero .cyberscan-search .tabs button.active::after {
+  background: #fff; height: 4px; border-radius: 0;
+  left: 0; right: 0; bottom: -1px;
+}
+.hero .cyberscan-search .panel-content { padding: 24px 0 0; }
+.hero .cyberscan-search .scanner-form { margin: 0; }
+.hero .cyberscan-search .phone-field {
+  display: flex; align-items: center; width: 100%;
+  height: clamp(76px, 7vw, 112px); border: 2px solid #111;
+  border-radius: 999px; background: #fff; overflow: visible;
+  padding: 5px; box-shadow: none;
+}
+.hero .cyberscan-search .phone-field:focus-within {
+  border-color: #111; box-shadow: 0 0 0 4px #ffffff55;
+}
+.hero .cyberscan-search .country-code {
+  flex: 0 0 auto; align-self: center; justify-content: center;
+  height: 80%; min-width: 62px; background: transparent;
+  border: 0; border-right: 1px solid #c5cbd6;
+  color: #315dff; font-size: clamp(16px, 2vw, 23px);
+  font-weight: 800; padding: 0 16px 0 18px;
+}
+.hero .cyberscan-search .scanner-prefix-icon {
+  width: 23px; height: 23px; fill: none; stroke: currentColor;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+}
+.hero .cyberscan-search .phone-field input {
+  flex: 1 1 0; min-width: 0; width: 0; align-self: stretch;
+  border: 0; outline: 0; background: transparent;
+  color: #14223a; padding: 0 15px; font-size: clamp(15px, 1.5vw, 21px);
+}
+.hero .cyberscan-search .phone-field input::placeholder { color: #697b93; opacity: 1; }
+.hero .cyberscan-search .search-button,
+.hero .cyberscan-search .search-button:hover {
+  flex: 0 0 auto; align-self: stretch; margin: 0;
+  width: clamp(70px, 11vw, 150px); min-width: 0;
+  border: 4px solid transparent; border-radius: 999px;
+  background: linear-gradient(#050505,#050505) padding-box,
+    conic-gradient(from 30deg,#246bff,#d6e5ff,#fff,#f100d4,#f6a5ec,#fff,#246bff) border-box;
+  color: #fff; box-shadow: none;
+  transition: filter .18s ease;
+}
+.hero .cyberscan-search .search-button:hover { filter: brightness(1.16); }
+.hero .cyberscan-search .search-button:disabled { opacity: .65; cursor: wait; }
+.hero .cyberscan-search .search-button svg {
+  width: clamp(30px, 3.5vw, 48px); height: auto; overflow: visible;
+  fill: none; stroke: #fff; stroke-width: 2.3; stroke-linejoin: round;
+}
+.hero .cyberscan-search .search-button .scan-sparkle { fill: #fff; stroke: none; }
+.hero .cyberscan-search .tabs button:focus-visible,
+.hero .cyberscan-search button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.hero .cyberscan-search .search-button:focus-visible { outline: 3px solid #315dff; outline-offset: -8px; }
+.hero .cyberscan-search .panel-lede {
+  min-height: 0; margin: 15px 8px 0; text-align: center;
+  color: #e2edff; font-size: clamp(13px, 1.25vw, 17px); line-height: 1.5;
+}
+.hero .cyberscan-search .scanner-privacy-note {
+  color: #d7e7ff; font-size: 11px; text-align: center;
+  line-height: 1.5; margin: 9px 8px 0;
+}
+.hero .cyberscan-search textarea {
+  display: block; width: 100%; min-height: 116px; height: 116px;
+  border: 2px solid #111; border-radius: 24px;
+  background: #fff; color: #14223a; padding: 17px 19px;
+  font-size: 15px; resize: vertical;
+}
+.hero .cyberscan-search textarea::placeholder { color: #697b93; }
+.hero .cyberscan-search textarea:focus { box-shadow: 0 0 0 4px #ffffff55; }
+.hero .cyberscan-search .scan-actions .primary-button,
+.hero .cyberscan-search .scan-actions .primary-button:hover {
+  background: #050505; border: 2px solid #fff; color: #fff;
+  border-radius: 999px; padding: 11px 18px;
+}
+.hero .cyberscan-search .scan-actions .outline-button { border-radius: 999px; }
+@media (max-width: 540px) {
+  .hero .cyberscan-search .tabs button,
+  .hero .cyberscan-search .tabs button:nth-child(-n+3),
+  .hero .cyberscan-search .tabs button:nth-child(3n) {
+    min-height: 44px; font-size: 12px; padding: 9px 4px 13px;
+  }
+  .hero .cyberscan-search .panel-content { padding: 18px 0 0; }
+  .hero .cyberscan-search .phone-field { height: 74px; padding: 4px; }
+  .hero .cyberscan-search .country-code { min-width: 49px; padding: 0 10px; font-size: 17px; }
+  .hero .cyberscan-search .phone-field input { padding: 0 9px; font-size: 16px; }
+  .hero .cyberscan-search .search-button { width: 64px; border-width: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero .cyberscan-search * { transition: none; }
+}
