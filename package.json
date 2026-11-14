@@ -10,10 +10,10 @@
     "deploy": "npm run build"
   },
   "dependencies": {
+    "@clerk/react": "^6.18.8",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
-  },
-  "devDependencies": {}
+    "react-dom": "latest",
+    "vite": "latest"
+  }
 }
