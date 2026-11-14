@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ClerkProvider, useAuth, useClerk, UserButton } from '@clerk/react';
 import './styles.css';
 
 const appPath = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`;
 const assetPath = appPath;
+const scanModes = ['number', 'message', 'url', 'email', 'domain', 'ip'];
+const scanReturn = mode => new URL(`${appPath('/')}?scan=${scanModes.includes(mode) ? mode : 'number'}#top`, window.location.origin).href;
+const initialMode = () => { const mode = new URLSearchParams(window.location.search).get('scan'); return scanModes.includes(mode) ? mode : 'number'; };
+const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_live_Y2xlcmsuY3liZXJzY2FuLmNvLnphJA';
 
 const featureLinks = [
   { label: 'Caller ID', path: '/features/caller-id' },
@@ -102,6 +107,8 @@ function Chevron() {
 
 function Header({ plain = false }) {
   const [open, setOpen] = useState(false);
+  const { isLoaded, isSignedIn } = useAuth();
+  const clerk = useClerk();
   return <header className={`site-header${plain ? ' plain-header' : ''}`}>
     <div className="nav-wrap">
       <Logo />
@@ -114,12 +121,20 @@ function Header({ plain = false }) {
         <button className="nav-modal-trigger" type="button" onClick={() => openContactModal('report')}>Report Scam/Fraud</button>
         <a href={appPath('/support')}>Support</a>
       </nav>
-      <div className="nav-actions"><a className="sign-in" href={appPath('/signin')}>Sign in</a><button className="language" type="button">EN <Chevron /></button><button className="menu-button" type="button" aria-label="Open menu" onClick={() => setOpen(!open)}><span /><span /></button></div>
+      <div className="nav-actions">{isLoaded && (isSignedIn ? <UserButton /> : <button className="sign-in" type="button" onClick={() => clerk.redirectToSignIn({ redirectUrl: scanReturn('number') })}>Sign in</button>)}<button className="language" type="button">EN <Chevron /></button><button className="menu-button" type="button" aria-label="Open menu" onClick={() => setOpen(!open)}><span /><span /></button></div>
     </div>
   </header>;
 }
 
 function SearchPanel({ mode, setMode }) {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const clerk = useClerk();
+  const requireAccount = nextMode => {
+    if (!isLoaded) return false;
+    if (isSignedIn) return true;
+    void clerk.redirectToSignUp({ redirectUrl: scanReturn(nextMode) });
+    return false;
+  };
   const scanTypes = [
     { id: 'number', label: 'Search a number', placeholder: 'Search any phone or WhatsApp number', description: 'Check a suspicious phone or WhatsApp number. Live reputation checks are coming soon.' },
     { id: 'message', label: 'Scan a message', placeholder: 'Paste a suspicious WhatsApp, SMS or email message', description: 'Review suspicious WhatsApp, SMS or email text. Remove passwords, PINs and personal information first.' },
@@ -150,6 +165,7 @@ function SearchPanel({ mode, setMode }) {
     setValues((previous) => ({ ...previous, [mode]: next }));
   };
   const selectMode = (nextMode) => {
+    if (!requireAccount(nextMode)) return;
     if (nextMode !== mode) { resetScan(); setMode(nextMode); }
   };
   const handleTabKey = (event, index) => {
@@ -164,7 +180,7 @@ function SearchPanel({ mode, setMode }) {
     tabsRef.current[next]?.focus();
   };
   const scan = async () => {
-    if (requestRef.current) return;
+    if (!requireAccount(mode) || requestRef.current) return;
     setSubmitted(true);
     if (mode !== 'url') return;
     const endpoint = (import.meta.env.VITE_CYBERSCAN_API_URL || '').replace(/\/$/, '');
@@ -174,7 +190,9 @@ function SearchPanel({ mode, setMode }) {
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
-      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal });
+      const token = await getToken();
+      if (!token || controller.signal.aborted) throw new Error('An active session is required.');
+      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal });
       const data = await response.json();
       if (requestRef.current !== controller) return;
       if (!response.ok) throw new Error(data?.error?.message || 'The scanner could not complete this request.');
@@ -260,11 +278,12 @@ function HeroMedia({ mode }) {
 }
 
 function Hero() {
-  const [heroMode, setHeroMode] = useState('number');
+  const [heroMode, setHeroMode] = useState(initialMode);
+  const { userId } = useAuth();
   return <main id="home">
     <section className="hero" id="top">
       <div className="hero-inner">
-        <div className="hero-copy"><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Check WhatsApp scams, suspicious messages, phone numbers, URLs, email addresses, domains and IP addresses—all in one place.</p><SearchPanel mode={heroMode} setMode={setHeroMode} /></div>
+        <div className="hero-copy"><h1>Know the risk.<br /><em>Stay protected.</em></h1><p className="hero-subtitle">Check WhatsApp scams, suspicious messages, phone numbers, URLs, email addresses, domains and IP addresses—all in one place.</p><SearchPanel key={userId || 'guest'} mode={heroMode} setMode={setHeroMode} /></div>
         <div className="hero-art"><HeroMedia mode={heroMode} /></div>
       </div>
       <div className="hero-wave" />
@@ -348,8 +367,9 @@ function SupportPage() {
 }
 
 function SigninPage() {
-  const [sent, setSent] = useState(false);
-  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><div className="section-label">WELCOME BACK</div><h1>Sign in to<br /><span>Cyberscan.</span></h1><form onSubmit={(event) => { event.preventDefault(); setSent(true); }}><label>Email address<input required type="email" placeholder="you@example.com" /></label><label>Password<input required type="password" placeholder="••••••••" /></label><button className="blue-button" type="submit">Sign in <span>→</span></button></form>{sent && <div className="form-success">Sign-in request sent.</div>}</section></main></>;
+  const { isLoaded, isSignedIn } = useAuth();
+  const clerk = useClerk();
+  return <><Header plain /><main className="subpage-main signin-page"><section className="signin-card"><Logo /><h1>Welcome to CyberScan.</h1>{isLoaded && (isSignedIn ? <a href={scanReturn('number')}>Continue to scanner</a> : <><button className="blue-button" type="button" onClick={() => clerk.redirectToSignIn({ redirectUrl: scanReturn('number') })}>Sign in</button><button className="blue-button" type="button" onClick={() => clerk.redirectToSignUp({ redirectUrl: scanReturn('number') })}>Create account</button></>)}</section></main></>;
 }
 
 function RoutePage() {
@@ -375,4 +395,4 @@ function App() {
   return <><RoutePage />{modalKind && <ContactModal key={modalKind} kind={modalKind} onClose={() => setModalKind(null)} />}</>;
 }
 
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(<ClerkProvider publishableKey={clerkKey} afterSignOutUrl={appPath('/')}><App /></ClerkProvider>);
