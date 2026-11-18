@@ -24,10 +24,10 @@ export async function verifyClerkToken(token, fetcher = (...args) => globalThis.
   let stage = "jwks_fetch";
   let upstreamStatus;
   try {
-  const response = await fetcher(issuer + "/.well-known/jwks.json", {redirect:"error", signal:AbortSignal.timeout(5000)});
+  const response = await fetcher(issuer + "/.well-known/jwks.json", {redirect: "manual", signal:AbortSignal.timeout(5000)});
   upstreamStatus = response.status;
   stage = "jwks_status";
-  if (!response.ok) throw new Error("JWKS unavailable");
+  if (response.status >= 300 && response.status < 400 || !response.ok) throw new Error("JWKS unavailable");
   stage = "jwks_parse";
   const body = await response.json();
   if (!Array.isArray(body.keys)) throw new Error("Invalid JWKS");

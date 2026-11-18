@@ -1,6 +1,6 @@
 const DNS_ENDPOINT = "https://cloudflare-dns.com/dns-query";
 
-export async function resolveHostname(hostname, fetchImpl = fetch) {
+export async function resolveHostname(hostname, fetchImpl = (...args) => globalThis.fetch(...args)) {
   const records = [];
 
   for (const [type, code] of [["A", 1], ["AAAA", 28]]) {
@@ -14,11 +14,11 @@ export async function resolveHostname(hostname, fetchImpl = fetch) {
       headers: {
         accept: "application/dns-json"
       },
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(5000)
     });
 
-    if (!response.ok) {
+    if (response.status >= 300 && response.status < 400 || !response.ok) {
       throw new Error(`DNS ${type} lookup failed.`);
     }
 

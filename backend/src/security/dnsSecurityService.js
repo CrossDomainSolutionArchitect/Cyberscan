@@ -2,7 +2,7 @@ import { validateHostname } from "../validators/hostnameValidator.js";
 import { resolveHostname } from "./dnsResolver.js";
 import { validateDnsAddresses } from "./dnsAddressValidator.js";
 
-export async function checkDnsSecurity(hostname, fetchImpl = fetch) {
+export async function checkDnsSecurity(hostname, fetchImpl = (...args) => globalThis.fetch(...args)) {
   const hostnameResult = validateHostname(hostname);
 
   if (!hostnameResult.valid) {

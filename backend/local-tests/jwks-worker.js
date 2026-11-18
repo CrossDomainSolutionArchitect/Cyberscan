@@ -12,9 +12,9 @@ export default {
   let jwks;
   for(const [name, options] of [
    ["native fetch",()=>({})],
-   ["redirect policy",()=>({redirect:"error"})],
+   ["redirect policy",()=>({redirect: "manual"})],
    ["timeout signal",()=>({signal:AbortSignal.timeout(5000)})],
-   ["production options",()=>({redirect:"error",signal:AbortSignal.timeout(5000)})]
+   ["corrected production options",()=>({redirect: "manual",signal:AbortSignal.timeout(5000)})]
   ]) await check(name,async()=>{
    const response=await globalThis.fetch(endpoint,options());
    const status=response.status;

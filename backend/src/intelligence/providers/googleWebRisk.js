@@ -13,7 +13,7 @@ const THREAT_TYPES = [
 export async function checkGoogleWebRisk(
   url,
   apiKey,
-  fetchImpl = fetch
+  fetchImpl = (...args) => globalThis.fetch(...args)
 ) {
   if (
     typeof apiKey !== "string" ||
@@ -39,14 +39,14 @@ export async function checkGoogleWebRisk(
 
     const response = await fetchImpl(endpoint.toString(), {
       method: "GET",
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(5000),
       headers: {
         "Accept": "application/json"
       }
     });
 
-    if (!response.ok) {
+    if (response.status >= 300 && response.status < 400 || !response.ok) {
       return createThreatResult({
         provider: PROVIDER,
         status: "error",

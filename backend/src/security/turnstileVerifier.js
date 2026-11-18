@@ -11,7 +11,7 @@ const EXPECTED_ACTION = "scan_url";
 export async function verifyTurnstile(
   token,
   secret,
-  fetchImpl = fetch
+  fetchImpl = (...args) => globalThis.fetch(...args)
 ) {
   if (typeof secret !== "string" || !secret.trim()) {
     return {
@@ -43,11 +43,11 @@ export async function verifyTurnstile(
         "Content-Type": "application/x-www-form-urlencoded"
       },
       body,
-      redirect: "error",
+      redirect: "manual",
       signal: AbortSignal.timeout(5000)
     });
 
-    if (!response.ok) {
+    if (response.status >= 300 && response.status < 400 || !response.ok) {
       return {
         verified: false,
         error: "Turnstile verification failed."
