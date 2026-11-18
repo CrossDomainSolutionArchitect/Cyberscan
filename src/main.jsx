@@ -147,6 +147,46 @@ function SearchPanel({ mode, setMode }) {
   const requestRef = useRef(null);
   const requestIdRef = useRef(null);
   const tabsRef = useRef([]);
+  const challengeRef = useRef(null);
+  const widgetRef = useRef(null);
+  const [challengeToken, setChallengeToken] = useState('');
+  const [needsChallenge, setNeedsChallenge] = useState(false);
+  const [challengeError, setChallengeError] = useState('');
+  useEffect(() => {
+    if (!needsChallenge || mode !== 'url' || !isSignedIn || !import.meta.env.VITE_TURNSTILE_SITE_KEY) return;
+    let active = true;
+    const fail = () => { if(active) { setChallengeToken(''); setChallengeError('Verification unavailable. Retry or reload the page.'); } };
+    const mount = () => {
+      if (!active || !challengeRef.current || !window.turnstile || widgetRef.current !== null) return;
+      try {
+        widgetRef.current = window.turnstile.render(challengeRef.current, {
+          sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+          action: 'scan_url',
+          callback: token => { if(active) { setChallengeToken(token); setChallengeError(''); } },
+          'expired-callback': () => { if(active) setChallengeToken(''); },
+          'error-callback': fail
+        });
+      } catch { fail(); }
+    };
+    let script = document.querySelector('script[data-cyberscan-turnstile]');
+    if (!script) {
+      script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.dataset.cyberscanTurnstile = 'true';
+      document.head.appendChild(script);
+    }
+    script.addEventListener('load', mount);
+    script.addEventListener('error', fail);
+    mount();
+    return () => {
+      active = false;
+      script.removeEventListener('load', mount);
+      script.removeEventListener('error', fail);
+      if(widgetRef.current !== null) window.turnstile?.remove(widgetRef.current);
+      widgetRef.current = null;
+    };
+  }, [needsChallenge, mode, isSignedIn]);
   useEffect(() => () => {
     requestRef.current?.abort();
     requestRef.current = null;
@@ -157,6 +197,9 @@ function SearchPanel({ mode, setMode }) {
   const value = values[mode] || '';
   const resetScan = () => {
     requestIdRef.current = null;
+    setNeedsChallenge(false);
+    setChallengeToken('');
+    setChallengeError('');
     requestRef.current?.abort();
     requestRef.current = null;
     setSubmitted(false);
@@ -198,9 +241,13 @@ function SearchPanel({ mode, setMode }) {
       if (target.protocol !== 'https:' || target.username || target.password) throw new Error('Invalid scanner endpoint.');
       const token = await getToken();
       if (!token || controller.signal.aborted) throw new Error('An active session is required.');
-      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim(), requestId }), signal: controller.signal, redirect: 'error' });
+      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim(), requestId, ...(challengeToken ? {turnstileToken:challengeToken} : {}) }), signal: controller.signal, redirect: 'error' });
       const payload = await response.json();
       if (requestRef.current !== controller) return;
+      if (response.status === 403 && ['VERIFICATION_REQUIRED','VERIFICATION_FAILED'].includes(payload?.error?.code)) {
+        setNeedsChallenge(true);
+        setChallengeToken('');
+      }
       if (!response.ok) throw new Error(payload?.error?.message || 'The scanner could not complete this request.');
       const data = payload.data;
       if (!data || typeof data !== 'object' || !['malicious', 'suspicious', 'no_known_indicators', 'unknown'].includes(data.verdict)
@@ -209,12 +256,20 @@ function SearchPanel({ mode, setMode }) {
         || (data.recommendations != null && (!Array.isArray(data.recommendations) || data.recommendations.some(item => typeof item !== 'string')))) {
         throw new Error('The scanner returned an unsupported result.');
       }
+      setNeedsChallenge(false);
+      setChallengeToken('');
       setScanState({ status: 'done', data, error: '' });
     } catch (error) {
       if (requestRef.current === controller) setScanState({ status: 'error', data: null, error: error.name === 'AbortError' ? 'The scan timed out. Please try again.' : (error.message || 'Scanner unavailable.') });
     } finally {
       clearTimeout(timer);
-      if (requestRef.current === controller) requestRef.current = null;
+      if (requestRef.current === controller) {
+        requestRef.current = null;
+        if(challengeToken) {
+          setChallengeToken('');
+          if(widgetRef.current !== null) window.turnstile?.reset(widgetRef.current);
+        }
+      }
     }
   };
   const result = !value.trim() ? 'Enter a value to check.' : 'This scan is not yet connected to live threat intelligence. CyberScan has not verified this input or established that it is safe or malicious.';
@@ -237,6 +292,11 @@ function SearchPanel({ mode, setMode }) {
         <button type="submit" className="search-button" aria-label={`Check ${selected.label}`} aria-busy={scanState.status === 'loading'} disabled={scanState.status === 'loading'}><svg viewBox="0 0 42 36" aria-hidden="true"><circle cx="15" cy="19" r="10" /><path d="m22.5 26.5 8 8" /><path className="scan-sparkle" d="M31 1c1.3 7 4.5 10.2 11 11-6.5.8-9.7 4-11 11-1.3-7-4.5-10.2-11-11 6.5-.8 9.7-4 11-11Z" /></svg></button>
       </div>}
       </form>
+      {mode === 'url' && needsChallenge && <div>
+        {import.meta.env.VITE_TURNSTILE_SITE_KEY ? <div ref={challengeRef} /> : <p role="alert">Human verification is not configured.</p>}
+        {challengeError && <p role="alert">{challengeError}</p>}
+        <button type="button" className="outline-button" disabled={!challengeToken || scanState.status === 'loading'} onClick={() => void scan()}>Verify and continue</button>
+      </div>}
       <p className="panel-lede" id="scanner-description">{selected.description}</p>
       <small className="scanner-privacy-note" id="scanner-privacy">Privacy first · Do not enter confidential information.</small>
       {mode === 'url' ? <div aria-live="polite">
