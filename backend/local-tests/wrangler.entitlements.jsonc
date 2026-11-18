@@ -1,0 +1,14 @@
+{
+  "name": "cyberscan-entitlement-local-test",
+  "main": "entitlement-worker.js",
+  "compatibility_date": "2026-11-12",
+  "workers_dev": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "cyberscan-db",
+      "database_id": "5b1e2ae3-55d3-4c37-95a5-d02dbe9115da",
+      "migrations_dir": "../migrations"
+    }
+  ]
+}
