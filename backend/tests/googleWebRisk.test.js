@@ -109,7 +109,7 @@ test("uses the correct Google API endpoint", async () => {
   );
 
   assert.equal(capturedOptions.method, "GET");
-  assert.equal(capturedOptions.redirect, "error");
+  assert.equal(capturedOptions.redirect, "manual");
 });
 
 test("handles provider HTTP errors", async () => {
