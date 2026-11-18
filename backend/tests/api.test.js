@@ -126,7 +126,7 @@ test("Unsupported preflight header returns HTTP 403", async () => {
       headers: {
         Origin: "https://cyberscan.co.za",
         "Access-Control-Request-Method": "POST",
-        "Access-Control-Request-Headers": "Authorization"
+        "Access-Control-Request-Headers": "Authorization, X-Untrusted-Header"
       }
     })
   );
@@ -169,4 +169,31 @@ test("Preflight is denied when allowed origins are not configured", async () => 
   const body = await response.json();
 
   assert.equal(body.error.code, "CORS_ORIGIN_DENIED");
+});
+
+test("Approved scanner preflight allows Clerk authorization", async () => {
+  const response = await fetchWorker(makeRequest("/v1/scans", {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://cyberscan.co.za",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "content-type, authorization"
+    }
+  }));
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "https://cyberscan.co.za");
+  assert.match(response.headers.get("Access-Control-Allow-Headers"), /\bauthorization\b/i);
+});
+
+test("Untrusted scanner origin cannot preflight authorization", async () => {
+  const response = await fetchWorker(makeRequest("/v1/scans", {
+    method: "OPTIONS",
+    headers: {
+      Origin: "https://untrusted.example",
+      "Access-Control-Request-Method": "POST",
+      "Access-Control-Request-Headers": "authorization"
+    }
+  }));
+  assert.equal(response.status, 403);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), null);
 });
