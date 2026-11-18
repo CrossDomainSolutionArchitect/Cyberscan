@@ -6,12 +6,16 @@ import {
 
 import {
   applyCors,
+  enforceOrigin,
   handlePreflight
 } from "./middleware/cors.js";
 
 export default {
   async fetch(request, env) {
     try {
+      const originDenied = enforceOrigin(request, env);
+      if (originDenied) return originDenied;
+
       const preflightResponse = handlePreflight(request, env);
 
       if (preflightResponse) {

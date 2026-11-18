@@ -18,6 +18,14 @@ function getAllowedOrigins(env) {
 const ALLOWED_METHODS = new Set(["GET", "POST"]);
 const ALLOWED_HEADERS = new Set(["content-type", "authorization"]);
 
+export function enforceOrigin(request, env) {
+  const origin = request.headers.get("Origin");
+  if (origin !== null && !getAllowedOrigins(env).has(origin)) {
+    return errorResponse("CORS_ORIGIN_DENIED", "Origin is not permitted.", 403);
+  }
+  return null;
+}
+
 export function applyCors(request, response, env) {
   const origin = request.headers.get("Origin");
 
