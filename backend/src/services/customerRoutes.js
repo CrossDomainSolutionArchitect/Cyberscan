@@ -1,3 +1,4 @@
+import {enforceRateLimit} from "../security/rateLimiter.js";
 import {verifyTurnstile} from "../security/turnstileVerifier.js";
 import {verifyClerkToken} from "../security/clerkVerifier.js";
 import {ensureUser, allowance} from "./entitlements.js";
@@ -7,6 +8,10 @@ import {validateScanRequest} from "../validators/scanRequestValidator.js";
 import {successResponse,errorResponse} from "../utils/response.js";
 export async function customerRoute(request, env, path, deps = {}) {
   if (request.method !== (path === "/v1/me" ? "GET" : "POST")) return errorResponse("METHOD_NOT_ALLOWED","Unsupported method.",405);
+  if(path==="/v1/scans") {
+    const denied=await enforceRateLimit(env,"scanIp",request.headers.get("CF-Connecting-IP"));
+    if(denied) return denied;
+  }
   const match = /^Bearer ([^\s]+)$/i.exec(request.headers.get("Authorization") || "");
   let identity;
   try { identity = match && await (deps.verify || verifyClerkToken)(match[1]); }
@@ -15,6 +20,8 @@ export async function customerRoute(request, env, path, deps = {}) {
   const db = env.DB;
   if (!db) return errorResponse("DATABASE_UNAVAILABLE","Customer database unavailable.",503);
   const userId = identity.userId;
+  const denied=await enforceRateLimit(env,path==="/v1/me"?"accountUser":"scanUser",userId);
+  if(denied) return denied;
   await ensureUser(db,userId);
   if (path === "/v1/me") return successResponse({userId,entitlement:await allowance(db,userId)});
   let body;

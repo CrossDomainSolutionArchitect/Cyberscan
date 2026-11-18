@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cyberscan-api",
-  "main": "src/index.js",
+  "main": "src/worker.js",
   "compatibility_date": "2026-11-12",
   "workers_dev": true,
   "vars": {
@@ -12,6 +12,22 @@
       "binding": "DB",
       "database_name": "cyberscan-db",
       "database_id": "5b1e2ae3-55d3-4c37-95a5-d02dbe9115da"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "QUOTA_COUNTER",
+        "class_name": "QuotaDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "QuotaDurableObject"
+      ]
     }
   ]
 }

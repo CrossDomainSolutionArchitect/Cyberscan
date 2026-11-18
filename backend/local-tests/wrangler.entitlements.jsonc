@@ -10,5 +10,21 @@
       "database_id": "5b1e2ae3-55d3-4c37-95a5-d02dbe9115da",
       "migrations_dir": "../migrations"
     }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "QUOTA_COUNTER",
+        "class_name": "QuotaDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "QuotaDurableObject"
+      ]
+    }
   ]
 }

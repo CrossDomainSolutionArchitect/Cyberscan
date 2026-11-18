@@ -1,3 +1,5 @@
+export {QuotaDurableObject} from "../src/durable/QuotaDurableObject.js";
+import {enforceRateLimit} from "../src/security/rateLimiter.js";
 import {ensureUser, allowance, reserveScan, finishScan} from "../src/services/entitlements.js";
 import {customerRoute} from "../src/services/customerRoutes.js";
 export default {
@@ -5,6 +7,7 @@ export default {
   if (new URL(request.url).pathname !== "/test" || request.method !== "POST") return new Response("Not found",{status:404});
   const db=env.DB, a="user_test_"+crypto.randomUUID(), b="user_test_"+crypto.randomUUID();
   const checks=[];
+  const testIp="synthetic-"+crypto.randomUUID();
   function check(name, condition){checks.push({name,passed:Boolean(condition)});}
   try {
    await ensureUser(db,a); await ensureUser(db,b);
@@ -27,7 +30,7 @@ export default {
    check("Independent customer allowance",(await allowance(db,b)).remaining===3);
    let rejected=false;try{await finishScan(db,a,replacement,true);}catch{rejected=true;}
    check("Duplicate settlement rejected",rejected && (await allowance(db,a)).remaining===0);
-   const response=await customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify({type:"url",value:"https://example.com",requestId:crypto.randomUUID()})}),{...env,IDEMPOTENCY_HMAC_KEY:"synthetic-local-test-key-not-for-production"},"/v1/scans",{verify:async()=>({userId:a}),pipeline:async()=>{throw new Error("Must not call provider");}});
+   const response=await customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json","CF-Connecting-IP":testIp},body:JSON.stringify({type:"url",value:"https://example.com",requestId:crypto.randomUUID()})}),{...env,IDEMPOTENCY_HMAC_KEY:"synthetic-local-test-key-not-for-production"},"/v1/scans",{verify:async()=>({userId:a}),pipeline:async()=>{throw new Error("Must not call provider");}});
    check("Fourth scan rejected by API",response.status===429 && (await response.json()).error.code==="FREE_SCAN_LIMIT_REACHED");
    const stale=crypto.randomUUID();
    check("Recovery fixture reserved",await reserveScan(db,b,stale));
@@ -44,7 +47,7 @@ export default {
    const key=crypto.randomUUID();
    const testEnv={...env,TURNSTILE_SECRET_KEY:"synthetic",IDEMPOTENCY_HMAC_KEY:"synthetic-local-test-key-not-for-production"};
    let calls=0;
-   const invoke=(requestId,value="https://example.com",fail=false,userId=b,turnstileToken="valid",options=testEnv)=>customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify({type:"url",value,requestId,turnstileToken})}),options,"/v1/scans",{verify:async()=>({userId}),turnstile:async token=>({verified:token==="valid"}),pipeline:async()=>{calls++;if(fail)throw Error("synthetic");return {status:"completed",intelligence:{status:"completed",malicious:false,threats:[]}};}});
+   const invoke=(requestId,value="https://example.com",fail=false,userId=b,turnstileToken="valid",options=testEnv)=>customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json","CF-Connecting-IP":testIp},body:JSON.stringify({type:"url",value,requestId,turnstileToken})}),options,"/v1/scans",{verify:async()=>({userId}),turnstile:async token=>({verified:token==="valid"}),pipeline:async()=>{calls++;if(fail)throw Error("synthetic");return {status:"completed",intelligence:{status:"completed",malicious:false,threats:[]}};}});
    check("Missing verification rejected",(await invoke(key,"https://example.com",false,b,"")).status===403 && calls===0);
    check("Invalid verification rejected",(await invoke(key,"https://example.com",false,b,"invalid")).status===403 && calls===0);
    check("Missing secret fails closed",(await invoke(key,"https://example.com",false,b,"valid",{...testEnv,TURNSTILE_SECRET_KEY:""})).status===503 && calls===0);
@@ -58,6 +61,13 @@ export default {
    check("Failed request can retry",(await invoke(retry)).status===200 && calls===3);
    check("Replay after exhaustion",(await invoke(key)).status===200 && (await allowance(db,b)).remaining===0);
    check("Customer scope isolated",(await invoke(key,"https://example.org",false,a)).status===429);
+   const rateId=crypto.randomUUID();
+   const probe=await Promise.all(Array.from({length:21},()=>enforceRateLimit(env,"scanUser",rateId)));
+   check("Scanner rate limit admits exactly twenty",probe.filter(x=>x===null).length===20 && probe.filter(x=>x?.status===429).length===1);
+   check("Rate limit returns retry header",Number(probe.find(x=>x?.status===429)?.headers.get("Retry-After"))>=1);
+   check("Independent rate scope",await enforceRateLimit(env,"accountUser",rateId)===null);
+   check("Missing rate binding fails closed",(await enforceRateLimit({},"scanUser",rateId)).status===503);
+   check("Missing IP fails closed",(await enforceRateLimit(env,"scanIp",null)).status===503);
   } catch(e){checks.push({name:"Integration execution",passed:false,error:e.message});}
   finally {
    await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?)").bind(a,b).run();
