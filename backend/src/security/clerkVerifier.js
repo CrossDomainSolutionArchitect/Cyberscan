@@ -5,7 +5,7 @@ const decode = s => {
   return Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
 };
 const json = s => JSON.parse(new TextDecoder("utf-8", {fatal:true}).decode(decode(s)));
-export async function verifyClerkToken(token, fetcher = fetch, now = Date.now()/1000) {
+export async function verifyClerkToken(token, fetcher = (...args) => globalThis.fetch(...args), now = Date.now()/1000) {
   let parts, header, claims, signature;
   try {
     if (typeof token !== "string" || token.length > 16384) return null;
