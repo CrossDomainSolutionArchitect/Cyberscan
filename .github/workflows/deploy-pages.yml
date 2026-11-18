@@ -28,6 +28,7 @@ jobs:
       - name: Build
         env:
           VITE_BASE_PATH: /
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_CYBERSCAN_API_URL: ${{ vars.VITE_CYBERSCAN_API_URL }}
           VITE_EMAILJS_SERVICE_ID: ${{ vars.VITE_EMAILJS_SERVICE_ID }}

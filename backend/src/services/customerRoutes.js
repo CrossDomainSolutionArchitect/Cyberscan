@@ -1,6 +1,7 @@
+import {verifyTurnstile} from "../security/turnstileVerifier.js";
 import {verifyClerkToken} from "../security/clerkVerifier.js";
 import {ensureUser, allowance} from "./entitlements.js";
-import {fingerprint,claimRequest,settleRequest} from "./idempotency.js";
+import {fingerprint,claimRequest,settleRequest,inspectRequest} from "./idempotency.js";
 import {runScanPipeline} from "./scanPipeline.js";
 import {validateScanRequest} from "../validators/scanRequestValidator.js";
 import {successResponse,errorResponse} from "../utils/response.js";
@@ -24,12 +25,20 @@ export async function customerRoute(request, env, path, deps = {}) {
     for (;;) { const {done,value}=await reader.read(); if(done) break; size+=value.byteLength; if(size>16384){await reader.cancel();return errorResponse("BODY_TOO_LARGE","Request too large.",413);} chunks.push(decoder.decode(value,{stream:true})); }
     chunks.push(decoder.decode()); body=JSON.parse(chunks.join(""));
   } catch { return errorResponse("INVALID_BODY","Invalid JSON request.",400); }
-  if (!body || body.type !== "url" || Object.keys(body).length !== 3 || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId || '') || typeof body.requestId !== 'string' || typeof body.value !== "string" || !validateScanRequest({url:body.value}).valid) return errorResponse("INVALID_SCAN","Provide a valid URL. Other scan categories are not yet supported.",400);
+  if (!body || body.type !== "url" || Object.keys(body).some(k=>!["type","value","requestId","turnstileToken"].includes(k)) || typeof body.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId || '') || typeof body.requestId !== 'string' || typeof body.value !== "string" || !validateScanRequest({url:body.value}).valid) return errorResponse("INVALID_SCAN","Provide a valid URL. Other scan categories are not yet supported.",400);
   const id=crypto.randomUUID();
   let hash;
   try { hash=await fingerprint(env.IDEMPOTENCY_HMAC_KEY,userId,body.value); }
   catch { return errorResponse("IDEMPOTENCY_UNAVAILABLE","Scanner temporarily unavailable.",503); }
-  const claim=await claimRequest(db,userId,id,body.requestId.toLowerCase(),hash);
+  let claim=await inspectRequest(db,userId,body.requestId.toLowerCase(),hash);
+  if(claim.state==="new") {
+    if((await allowance(db,userId)).remaining===0) return errorResponse("FREE_SCAN_LIMIT_REACHED","Your three complimentary searches have been used.",429);
+    if(typeof env.TURNSTILE_SECRET_KEY!=="string" || !env.TURNSTILE_SECRET_KEY.trim()) return errorResponse("VERIFICATION_UNAVAILABLE","Verification temporarily unavailable.",503);
+    if(typeof body.turnstileToken!=="string" || !body.turnstileToken.trim() || body.turnstileToken.length>2048) return errorResponse("VERIFICATION_REQUIRED","Complete human verification.",403);
+    const verification=await (deps.turnstile || verifyTurnstile)(body.turnstileToken,env.TURNSTILE_SECRET_KEY);
+    if(!verification?.verified) return errorResponse("VERIFICATION_FAILED","Human verification failed. Please retry.",403);
+    claim=await claimRequest(db,userId,id,body.requestId.toLowerCase(),hash);
+  }
   if(claim.state==="conflict") return errorResponse("REQUEST_CONFLICT","Request identifier already used for different input.",409);
   if(claim.state==="pending") return errorResponse("REQUEST_IN_PROGRESS","Scan still processing. Retry shortly.",409);
   if(claim.state==="replay") return successResponse({...claim.outcome,entitlement:await allowance(db,userId)});
