@@ -145,6 +145,7 @@ function SearchPanel({ mode, setMode }) {
   ];
   const [values, setValues] = useState({});
   const requestRef = useRef(null);
+  const requestIdRef = useRef(null);
   const tabsRef = useRef([]);
   useEffect(() => () => {
     requestRef.current?.abort();
@@ -155,6 +156,7 @@ function SearchPanel({ mode, setMode }) {
   const selected = scanTypes.find((type) => type.id === mode);
   const value = values[mode] || '';
   const resetScan = () => {
+    requestIdRef.current = null;
     requestRef.current?.abort();
     requestRef.current = null;
     setSubmitted(false);
@@ -187,6 +189,8 @@ function SearchPanel({ mode, setMode }) {
     if (!value.trim() || !endpoint) { setScanState({ status: 'error', data: null, error: !value.trim() ? 'Enter a URL to check.' : 'The URL scanning service has not been deployed yet.' }); return; }
     setScanState({ status: 'loading', data: null, error: '' });
     const controller = new AbortController();
+    requestIdRef.current ||= crypto.randomUUID();
+    const requestId = requestIdRef.current;
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
@@ -194,7 +198,7 @@ function SearchPanel({ mode, setMode }) {
       if (target.protocol !== 'https:' || target.username || target.password) throw new Error('Invalid scanner endpoint.');
       const token = await getToken();
       if (!token || controller.signal.aborted) throw new Error('An active session is required.');
-      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal, redirect: 'error' });
+      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim(), requestId }), signal: controller.signal, redirect: 'error' });
       const payload = await response.json();
       if (requestRef.current !== controller) return;
       if (!response.ok) throw new Error(payload?.error?.message || 'The scanner could not complete this request.');

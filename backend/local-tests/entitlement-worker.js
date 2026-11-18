@@ -27,7 +27,7 @@ export default {
    check("Independent customer allowance",(await allowance(db,b)).remaining===3);
    let rejected=false;try{await finishScan(db,a,replacement,true);}catch{rejected=true;}
    check("Duplicate settlement rejected",rejected && (await allowance(db,a)).remaining===0);
-   const response=await customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify({type:"url",value:"https://example.com"})}),env,"/v1/scans",{verify:async()=>({userId:a}),pipeline:async()=>{throw new Error("Must not call provider");}});
+   const response=await customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify({type:"url",value:"https://example.com",requestId:crypto.randomUUID()})}),{...env,IDEMPOTENCY_HMAC_KEY:"synthetic-local-test-key-not-for-production"},"/v1/scans",{verify:async()=>({userId:a}),pipeline:async()=>{throw new Error("Must not call provider");}});
    check("Fourth scan rejected by API",response.status===429 && (await response.json()).error.code==="FREE_SCAN_LIMIT_REACHED");
    const stale=crypto.randomUUID();
    check("Recovery fixture reserved",await reserveScan(db,b,stale));
@@ -41,6 +41,19 @@ export default {
    const fresh=crypto.randomUUID();
    check("Fresh reservation accepted after recovery",await reserveScan(db,b,fresh));
    check("Fresh reservation not expired",(await allowance(db,b)).remaining===2);
+   const key=crypto.randomUUID();
+   const testEnv={...env,IDEMPOTENCY_HMAC_KEY:"synthetic-local-test-key-not-for-production"};
+   let calls=0;
+   const invoke=(requestId,value="https://example.com",fail=false,userId=b)=>customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify({type:"url",value,requestId})}),testEnv,"/v1/scans",{verify:async()=>({userId}),pipeline:async()=>{calls++;if(fail)throw Error("synthetic");return {status:"completed",intelligence:{status:"completed",malicious:false,threats:[]}};}});
+   const results=await Promise.all(Array.from({length:10},()=>invoke(key)));
+   check("Concurrent duplicate executes provider once",calls===1 && results.every(r=>r.status===200||r.status===409));
+   check("Completed duplicate replay",(await invoke(key)).status===200 && calls===1);
+   check("Changed input conflict",(await invoke(key,"https://example.org")).status===409 && calls===1);
+   const retry=crypto.randomUUID();
+   check("Failed request releases quota",(await invoke(retry,"https://example.com",true)).status===503 && (await allowance(db,b)).remaining===1);
+   check("Failed request can retry",(await invoke(retry)).status===200 && calls===3);
+   check("Replay after exhaustion",(await invoke(key)).status===200 && (await allowance(db,b)).remaining===0);
+   check("Customer scope isolated",(await invoke(key,"https://example.org",false,a)).status===429);
   } catch(e){checks.push({name:"Integration execution",passed:false,error:e.message});}
   finally {
    await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?)").bind(a,b).run();
