@@ -1,0 +1,6 @@
+{
+  "name": "cyberscan-jwks-local-test",
+  "main": "jwks-worker.js",
+  "compatibility_date": "2026-11-12",
+  "workers_dev": false
+}
