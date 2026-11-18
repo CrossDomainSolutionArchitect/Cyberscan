@@ -29,6 +29,18 @@ export default {
    check("Duplicate settlement rejected",rejected && (await allowance(db,a)).remaining===0);
    const response=await customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json"},body:JSON.stringify({type:"url",value:"https://example.com"})}),env,"/v1/scans",{verify:async()=>({userId:a}),pipeline:async()=>{throw new Error("Must not call provider");}});
    check("Fourth scan rejected by API",response.status===429 && (await response.json()).error.code==="FREE_SCAN_LIMIT_REACHED");
+   const stale=crypto.randomUUID();
+   check("Recovery fixture reserved",await reserveScan(db,b,stale));
+   await db.prepare("UPDATE scan_requests SET created_at = datetime('now', '-6 minutes') WHERE id = ? AND clerk_user_id = ?").bind(stale,b).run();
+   let lateRejected=false;try{await finishScan(db,b,stale,true);}catch{lateRejected=true;}
+   check("Late settlement rejected",lateRejected);
+   check("Expired reservation restores allowance",(await allowance(db,b)).remaining===3);
+   const expired=await db.prepare("SELECT status FROM scan_requests WHERE id = ?").bind(stale).first();
+   check("Expired reservation marked failed",expired.status==="failed");
+   check("Completed scans remain counted",(await allowance(db,a)).remaining===0);
+   const fresh=crypto.randomUUID();
+   check("Fresh reservation accepted after recovery",await reserveScan(db,b,fresh));
+   check("Fresh reservation not expired",(await allowance(db,b)).remaining===2);
   } catch(e){checks.push({name:"Integration execution",passed:false,error:e.message});}
   finally {
    await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?)").bind(a,b).run();
