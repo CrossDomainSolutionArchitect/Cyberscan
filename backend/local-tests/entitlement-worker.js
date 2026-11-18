@@ -7,6 +7,7 @@ export default {
   if (new URL(request.url).pathname !== "/test" || request.method !== "POST") return new Response("Not found",{status:404});
   const db=env.DB, a="user_test_"+crypto.randomUUID(), b="user_test_"+crypto.randomUUID();
   const checks=[];
+  const c="user_test_"+crypto.randomUUID();
   const testIp="synthetic-"+crypto.randomUUID();
   function check(name, condition){checks.push({name,passed:Boolean(condition)});}
   try {
@@ -68,10 +69,35 @@ export default {
    check("Independent rate scope",await enforceRateLimit(env,"accountUser",rateId)===null);
    check("Missing rate binding fails closed",(await enforceRateLimit({},"scanUser",rateId)).status===503);
    check("Missing IP fails closed",(await enforceRateLimit(env,"scanIp",null)).status===503);
+   // Use fresh identities and avoid starting saturation probes near a window boundary.
+   const untilBoundary=60000-Date.now()%60000;
+   if(untilBoundary<10000) await new Promise(resolve=>setTimeout(resolve,untilBoundary+100));
+   const ip= "synthetic-"+crypto.randomUUID();
+   const windowStart=Math.floor(Date.now()/60000);
+   const ipProbe=await Promise.all(Array.from({length:61},()=>enforceRateLimit(env,"scanIp",ip)));
+   const accountProbe=await Promise.all(Array.from({length:31},()=>enforceRateLimit(env,"accountUser",c)));
+   const sameWindow=()=>Math.floor(Date.now()/60000)===windowStart;
+   const saturated=(responses,limit)=>responses.filter(x=>x===null).length===limit && responses.filter(x=>x?.status===429).length===1;
+   check("IP saturation",sameWindow() && saturated(ipProbe,60));
+   check("Account saturation",sameWindow() && saturated(accountProbe,30));
+   check("Independent IP addresses",await enforceRateLimit(env,"scanIp","synthetic-"+crypto.randomUUID())===null && (await enforceRateLimit(env,"scanIp",ip))?.status===429);
+   check("Independent customers",await enforceRateLimit(env,"accountUser",crypto.randomUUID())===null && (await enforceRateLimit(env,"accountUser",c))?.status===429);
+   await ensureUser(db,c);
+   const before=await allowance(db,c);
+   const customerProbe=await Promise.all(Array.from({length:20},()=>enforceRateLimit(env,"scanUser",c)));
+   let verifierCalls=0, challengeCalls=0, providerCalls=0;
+   const route=(address)=>customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json","CF-Connecting-IP":address},body:JSON.stringify({type:"url",value:"https://example.com",requestId:crypto.randomUUID(),turnstileToken:"valid"})}),testEnv,"/v1/scans",{verify:async()=>{verifierCalls++;return {userId:c};},turnstile:async()=>{challengeCalls++;return {verified:true};},pipeline:async()=>{providerCalls++;return {status:"completed",intelligence:{status:"completed",malicious:false,threats:[]}};}});
+   const denied=await route("synthetic-"+crypto.randomUUID());
+   check("Scanner API rate rejection",sameWindow() && customerProbe.every(x=>x===null) && denied.status===429 && (await denied.json()).error.code==="RATE_LIMIT_EXCEEDED" && verifierCalls===1 && challengeCalls===0 && providerCalls===0);
+   const after=await allowance(db,c);
+   const records=await db.prepare("SELECT COUNT(*) AS count FROM scan_requests WHERE clerk_user_id=?").bind(c).first();
+   check("Entitlement preservation",before.remaining===3 && after.remaining===3 && records.count===0);
+   const blocked=await route(ip);
+   check("Authentication flooding",sameWindow() && blocked.status===429 && (await blocked.json()).error.code==="RATE_LIMIT_EXCEEDED" && verifierCalls===1 && challengeCalls===0 && providerCalls===0);
   } catch(e){checks.push({name:"Integration execution",passed:false,error:e.message});}
   finally {
-   await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?)").bind(a,b).run();
-   await db.prepare("DELETE FROM users WHERE clerk_user_id IN (?,?)").bind(a,b).run();
+   await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?,?)").bind(a,b,c).run();
+   await db.prepare("DELETE FROM users WHERE clerk_user_id IN (?,?,?)").bind(a,b,c).run();
   }
   const passed=checks.every(c=>c.passed);
   return Response.json({passed,checks},{status:passed?200:500});
