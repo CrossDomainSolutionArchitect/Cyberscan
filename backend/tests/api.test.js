@@ -146,7 +146,8 @@ test("CORS fails closed when allowed origins are not configured", async () => {
 
   const response = await worker.fetch(request, {});
 
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).error.code, "CORS_ORIGIN_DENIED");
   assert.equal(
     response.headers.get("Access-Control-Allow-Origin"),
     null
