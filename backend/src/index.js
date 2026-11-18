@@ -1,3 +1,4 @@
+import { customerRoute } from "./services/customerRoutes.js";
 import {
   successResponse,
   errorResponse
@@ -34,6 +35,8 @@ export default {
             version: "1.0.0"
           });
         }
+      } else if (["/v1/me", "/v1/scans"].includes(url.pathname)) {
+        response = await customerRoute(request, env, url.pathname);
       } else {
         response = errorResponse(
           "NOT_FOUND",

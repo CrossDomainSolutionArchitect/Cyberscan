@@ -190,12 +190,15 @@ function SearchPanel({ mode, setMode }) {
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 12000);
     try {
+      const target = new URL(endpoint);
+      if (target.protocol !== 'https:' || target.username || target.password) throw new Error('Invalid scanner endpoint.');
       const token = await getToken();
       if (!token || controller.signal.aborted) throw new Error('An active session is required.');
-      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal });
-      const data = await response.json();
+      const response = await fetch(endpoint + '/v1/scans', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ type: 'url', value: value.trim() }), signal: controller.signal, redirect: 'error' });
+      const payload = await response.json();
       if (requestRef.current !== controller) return;
-      if (!response.ok) throw new Error(data?.error?.message || 'The scanner could not complete this request.');
+      if (!response.ok) throw new Error(payload?.error?.message || 'The scanner could not complete this request.');
+      const data = payload.data;
       if (!data || typeof data !== 'object' || !['malicious', 'suspicious', 'no_known_indicators', 'unknown'].includes(data.verdict)
         || (data.findings != null && (!Array.isArray(data.findings) || data.findings.some(item => !item || typeof item.title !== 'string' || typeof item.description !== 'string')))
         || (data.coverage?.limitations != null && (!Array.isArray(data.coverage.limitations) || data.coverage.limitations.some(item => typeof item !== 'string')))

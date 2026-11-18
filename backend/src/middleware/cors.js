@@ -16,7 +16,7 @@ function getAllowedOrigins(env) {
 }
 
 const ALLOWED_METHODS = new Set(["GET", "POST"]);
-const ALLOWED_HEADERS = new Set(["content-type"]);
+const ALLOWED_HEADERS = new Set(["content-type", "authorization"]);
 
 export function applyCors(request, response, env) {
   const origin = request.headers.get("Origin");
@@ -88,7 +88,7 @@ export function handlePreflight(request, env) {
     headers: {
       "Access-Control-Allow-Origin": origin,
       "Access-Control-Allow-Methods": "GET, POST",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
       "Access-Control-Max-Age": "600",
       "Vary": "Origin",
       "Cache-Control": "no-store",
