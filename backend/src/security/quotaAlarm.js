@@ -1,4 +1,4 @@
-export async function scheduleQuotaAlarm(storage, expiresAt) {
+export async function scheduleQuotaAlarmInTransaction(storage, expiresAt) {
   if (
     !Number.isSafeInteger(expiresAt) ||
     expiresAt < 0 ||
@@ -43,6 +43,9 @@ export async function scheduleQuotaAlarmTransactional(
   }
 
   return storage.transaction(async tx => {
-    await scheduleQuotaAlarm(tx, expiresAt);
+    await scheduleQuotaAlarmInTransaction(tx, expiresAt);
   });
 }
+
+// Standalone scheduling must always acquire a storage transaction.
+export const scheduleQuotaAlarm = scheduleQuotaAlarmTransactional;

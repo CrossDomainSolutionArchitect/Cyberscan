@@ -5,6 +5,15 @@ import {
   scheduleQuotaAlarm
 } from "../src/security/quotaAlarm.js";
 
+function transactional(storage) {
+  let queue = Promise.resolve();
+  return { transaction(callback) {
+    const operation = queue.then(() => callback(storage));
+    queue = operation.catch(() => {});
+    return operation;
+  }};
+}
+
 test("schedules an alarm when none exists", async () => {
   let alarm = null;
 
@@ -17,7 +26,7 @@ test("schedules an alarm when none exists", async () => {
     }
   };
 
-  await scheduleQuotaAlarm(storage, 60000);
+  await scheduleQuotaAlarm(transactional(storage), 60000);
 
   assert.equal(alarm, 60000);
 });
@@ -34,7 +43,7 @@ test("preserves an earlier existing alarm", async () => {
     }
   };
 
-  await scheduleQuotaAlarm(storage, 120000);
+  await scheduleQuotaAlarm(transactional(storage), 120000);
 
   assert.equal(alarm, 60000);
 });
@@ -51,7 +60,7 @@ test("replaces a later alarm with an earlier expiration", async () => {
     }
   };
 
-  await scheduleQuotaAlarm(storage, 60000);
+  await scheduleQuotaAlarm(transactional(storage), 60000);
 
   assert.equal(alarm, 60000);
 });
@@ -68,7 +77,7 @@ test("propagates alarm storage failures", async () => {
   };
 
   await assert.rejects(
-    scheduleQuotaAlarm(storage, 60000),
+    scheduleQuotaAlarm(transactional(storage), 60000),
     /Simulated alarm storage failure/
   );
 });
@@ -85,49 +94,31 @@ test("propagates alarm write failures", async () => {
   };
 
   await assert.rejects(
-    scheduleQuotaAlarm(storage, 60000),
+    scheduleQuotaAlarm(transactional(storage), 60000),
     /Simulated alarm write failure/
   );
 });
 
-test(
-  "preserves earliest alarm under concurrent scheduling",
-  { todo: "Nontransactional race demonstration; production uses transactional scheduling." },
-  async () => {
+test("preserves earliest alarm under concurrent scheduling", async () => {
   let alarm = null;
-  let reads = 0;
-
-  let releaseReads;
-  const bothRead = new Promise(resolve => {
-    releaseReads = resolve;
-  });
-
-  const storage = {
-    async getAlarm() {
-      const snapshot = alarm;
-      reads++;
-
-      if (reads === 2) {
-        releaseReads();
-      }
-
-      await bothRead;
-      return snapshot;
-    },
-
+  const storage = transactional({
+    async getAlarm() { return alarm; },
     async setAlarm(time) {
-      if (time === 120000) {
-        await new Promise(resolve => setTimeout(resolve, 10));
-      }
-
+      await new Promise(resolve => setTimeout(resolve, 10));
       alarm = time;
     }
-  };
-
+  });
   await Promise.all([
+    scheduleQuotaAlarm(storage, 120000),
     scheduleQuotaAlarm(storage, 60000),
-    scheduleQuotaAlarm(storage, 120000)
+    scheduleQuotaAlarm(storage, 180000)
   ]);
-
   assert.equal(alarm, 60000);
+});
+
+test("rejects standalone scheduling without transactional storage", async () => {
+  await assert.rejects(scheduleQuotaAlarm({
+    async getAlarm() { throw Error("must not read"); },
+    async setAlarm() { throw Error("must not write"); }
+  }, 60000), /Transactional quota alarm unavailable/);
 });

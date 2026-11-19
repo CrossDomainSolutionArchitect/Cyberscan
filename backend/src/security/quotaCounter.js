@@ -1,4 +1,4 @@
-import { scheduleQuotaAlarm } from "./quotaAlarm.js";
+import { scheduleQuotaAlarmInTransaction } from "./quotaAlarm.js";
 
 export class QuotaCounter {
   constructor(storage) {
@@ -96,7 +96,7 @@ export class QuotaCounter {
           expiresAt
         });
 
-        await scheduleQuotaAlarm(tx, expiresAt);
+        await scheduleQuotaAlarmInTransaction(tx, expiresAt);
 
         return {
           allowed: true,
