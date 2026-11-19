@@ -34,7 +34,9 @@ jobs:
           VITE_EMAILJS_SERVICE_ID: ${{ vars.VITE_EMAILJS_SERVICE_ID }}
           VITE_EMAILJS_TEMPLATE_ID: ${{ vars.VITE_EMAILJS_TEMPLATE_ID }}
           VITE_EMAILJS_PUBLIC_KEY: ${{ vars.VITE_EMAILJS_PUBLIC_KEY }}
-        run: npm run build
+        run: |
+          node scripts/validate-build-config.mjs
+          npm run build
       - name: Preserve SPA routes
         run: cp dist/index.html dist/404.html
       - name: Publish gh-pages branch

@@ -152,41 +152,49 @@ function SearchPanel({ mode, setMode }) {
   const [challengeToken, setChallengeToken] = useState('');
   const [needsChallenge, setNeedsChallenge] = useState(false);
   const [challengeError, setChallengeError] = useState('');
+  const [challengeAttempt, setChallengeAttempt] = useState(0);
   useEffect(() => {
     if (!needsChallenge || mode !== 'url' || !isSignedIn || !import.meta.env.VITE_TURNSTILE_SITE_KEY) return;
     let active = true;
-    const fail = () => { if(active) { setChallengeToken(''); setChallengeError('Verification unavailable. Retry or reload the page.'); } };
+    let timer;
+    setChallengeToken('');
+    setChallengeError('');
+    const fail = () => { if(active) { setChallengeToken(''); setChallengeError('Verification unavailable. Retry verification.'); } };
     const mount = () => {
-      if (!active || !challengeRef.current || !window.turnstile || widgetRef.current !== null) return;
+      if (!active || !challengeRef.current || typeof window.turnstile?.render !== 'function' || widgetRef.current !== null) return;
+      clearTimeout(timer);
       try {
         widgetRef.current = window.turnstile.render(challengeRef.current, {
           sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
           action: 'scan_url',
           callback: token => { if(active) { setChallengeToken(token); setChallengeError(''); } },
-          'expired-callback': () => { if(active) setChallengeToken(''); },
+          'expired-callback': () => { if(active) { setChallengeToken(''); setChallengeError('Verification expired. Retry verification.'); } },
           'error-callback': fail
         });
       } catch { fail(); }
     };
     let script = document.querySelector('script[data-cyberscan-turnstile]');
-    if (!script) {
+    if (!script && typeof window.turnstile?.render !== 'function') {
       script = document.createElement('script');
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       script.async = true;
       script.dataset.cyberscanTurnstile = 'true';
-      document.head.appendChild(script);
     }
-    script.addEventListener('load', mount);
-    script.addEventListener('error', fail);
+    const loadFailed = () => { script?.remove(); clearTimeout(timer); fail(); };
+    script?.addEventListener('load', mount);
+    script?.addEventListener('error', loadFailed);
+    timer = setTimeout(() => { if(widgetRef.current === null) loadFailed(); }, 15000);
+    if (script && !script.isConnected) document.head.appendChild(script);
     mount();
     return () => {
       active = false;
-      script.removeEventListener('load', mount);
-      script.removeEventListener('error', fail);
-      if(widgetRef.current !== null) window.turnstile?.remove(widgetRef.current);
+      clearTimeout(timer);
+      script?.removeEventListener('load', mount);
+      script?.removeEventListener('error', loadFailed);
+      try { if(widgetRef.current !== null) window.turnstile?.remove(widgetRef.current); } catch {}
       widgetRef.current = null;
     };
-  }, [needsChallenge, mode, isSignedIn]);
+  }, [needsChallenge, mode, isSignedIn, challengeAttempt]);
   useEffect(() => () => {
     requestRef.current?.abort();
     requestRef.current = null;
@@ -228,6 +236,7 @@ function SearchPanel({ mode, setMode }) {
     if (!requireAccount(mode) || requestRef.current) return;
     setSubmitted(true);
     if (mode !== 'url') return;
+    if (needsChallenge && !challengeToken) return;
     const endpoint = (import.meta.env.VITE_CYBERSCAN_API_URL || '').replace(/\/$/, '');
     if (!value.trim() || !endpoint) { setScanState({ status: 'error', data: null, error: !value.trim() ? 'Enter a URL to check.' : 'The URL scanning service has not been deployed yet.' }); return; }
     setScanState({ status: 'loading', data: null, error: '' });
@@ -267,7 +276,7 @@ function SearchPanel({ mode, setMode }) {
         requestRef.current = null;
         if(challengeToken) {
           setChallengeToken('');
-          if(widgetRef.current !== null) window.turnstile?.reset(widgetRef.current);
+          try { if(widgetRef.current !== null) window.turnstile?.reset(widgetRef.current); } catch { setChallengeError('Verification unavailable. Retry verification.'); }
         }
       }
     }
@@ -294,7 +303,7 @@ function SearchPanel({ mode, setMode }) {
       </form>
       {mode === 'url' && needsChallenge && <div>
         {import.meta.env.VITE_TURNSTILE_SITE_KEY ? <div ref={challengeRef} /> : <p role="alert">Human verification is not configured.</p>}
-        {challengeError && <p role="alert">{challengeError}</p>}
+        {challengeError && <><p role="alert">{challengeError}</p><button type="button" className="outline-button" disabled={scanState.status === 'loading'} onClick={() => setChallengeAttempt(n => n + 1)}>Retry verification</button></>}
         <button type="button" className="outline-button" disabled={!challengeToken || scanState.status === 'loading'} onClick={() => void scan()}>Verify and continue</button>
       </div>}
       <p className="panel-lede" id="scanner-description">{selected.description}</p>
