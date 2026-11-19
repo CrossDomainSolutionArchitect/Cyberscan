@@ -36,6 +36,9 @@ export function applyCors(request, response, env) {
   const headers = new Headers(response.headers);
 
   headers.set("Access-Control-Allow-Origin", origin);
+  if (headers.has("Retry-After")) {
+    headers.set("Access-Control-Expose-Headers", "Retry-After");
+  }
   headers.set("Vary", "Origin");
 
   return new Response(response.body, {
