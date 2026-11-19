@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '24.22.2'
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -36,6 +36,7 @@ jobs:
           VITE_EMAILJS_PUBLIC_KEY: ${{ vars.VITE_EMAILJS_PUBLIC_KEY }}
         run: |
           node scripts/validate-build-config.mjs
+          npm run test:frontend
           npm run build
       - name: Preserve SPA routes
         run: cp dist/index.html dist/404.html
