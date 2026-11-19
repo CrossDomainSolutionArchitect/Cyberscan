@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy": "npm run build"
+    "deploy": "npm run build",
+    "test:frontend": "vitest run tests/searchPanel.test.jsx"
   },
   "dependencies": {
     "@clerk/react": "^6.18.8",
@@ -15,5 +16,11 @@
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/react": "^16.3.3",
+    "jsdom": "^31.0.1",
+    "vitest": "^5.1.1"
   }
 }
