@@ -1,0 +1,22 @@
+{
+  "name": "cyberscan-alarm-local-test",
+  "main": "alarm-worker.js",
+  "compatibility_date": "2026-11-12",
+  "workers_dev": false,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "ALARM_TEST",
+        "class_name": "AlarmDiagnostic"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "AlarmDiagnostic"
+      ]
+    }
+  ]
+}
