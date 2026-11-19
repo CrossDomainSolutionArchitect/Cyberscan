@@ -126,7 +126,7 @@ function Header({ plain = false }) {
   </header>;
 }
 
-function SearchPanel({ mode, setMode }) {
+export function SearchPanel({ mode, setMode }) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const clerk = useClerk();
   const requireAccount = nextMode => {
@@ -471,4 +471,4 @@ function App() {
   return <><RoutePage />{modalKind && <ContactModal key={modalKind} kind={modalKind} onClose={() => setModalKind(null)} />}</>;
 }
 
-createRoot(document.getElementById('root')).render(<ClerkProvider publishableKey={clerkKey} afterSignOutUrl={appPath('/')}><App /></ClerkProvider>);
+if (document.getElementById('root')) createRoot(document.getElementById('root')).render(<ClerkProvider publishableKey={clerkKey} afterSignOutUrl={appPath('/')}><App /></ClerkProvider>);
