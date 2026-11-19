@@ -17,13 +17,15 @@ for(const status of [301,302,303,307,308]) {
   ["Web Risk",async f=>assert.equal((await checkGoogleWebRisk("https://example.com","synthetic",f)).status,"error")]
  ]) test(name+" rejects HTTP "+status+" without parsing or following",async()=>{
   let calls=0, parses=0;
+  const observedOptions=[];
   await invoke(async (url,options)=>{
    calls++;
-   assert.equal(options.redirect,"manual");
-   assert.ok(options.signal instanceof AbortSignal);
+   observedOptions.push(options);
    return {status,ok:false,headers:new Headers({Location:"https://redirect.invalid"}),json:async()=>{parses++;throw Error("Unexpected parsing");}};
   });
   assert.equal(calls,1);
+  assert.equal(observedOptions[0]?.redirect,"manual");
+  assert.ok(observedOptions[0]?.signal instanceof AbortSignal);
   assert.equal(parses,0);
  });
 }
