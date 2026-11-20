@@ -313,11 +313,11 @@ export function SearchPanel({ mode, setMode }) {
         {scanState.status === 'error' && <div className="result-message" role="alert">{scanState.error}</div>}
         {scanState.status === 'done' && <div className="url-scan-result" role="status">
           <strong>{({malicious:'Threat match detected',suspicious:'Security concern detected',no_known_indicators:'No known threat indicators from completed checks',unknown:'Insufficient evidence'})[scanState.data.verdict] || 'Result unavailable'}</strong>
-          <p>{scanState.data.summary?.hostname} · {scanState.data.coverage?.providers_succeeded || 0} reputation source(s) completed</p>
+          <p>{typeof scanState.data.summary?.hostname === 'string' && scanState.data.summary.hostname.trim() ? `${scanState.data.summary.hostname} · ` : ''}{Number.isSafeInteger(scanState.data.coverage?.providers_succeeded) && scanState.data.coverage.providers_succeeded >= 0 ? `${scanState.data.coverage.providers_succeeded} reputation source(s) completed` : 'Provider coverage details unavailable'}</p>
           {scanState.data.findings?.map(item => <p key={item.id}><b>{item.title}:</b> {item.description}</p>)}
           {scanState.data.coverage?.limitations?.map((item,i) => <p key={i}>Limit: {item}</p>)}
           {scanState.data.recommendations?.map((item,i) => <p key={i}>{item}</p>)}
-          <small>Checked {new Date(scanState.data.checked_at).toLocaleString('en-ZA')}. A clean lookup does not guarantee safety.</small>
+          <small>{typeof scanState.data.checked_at === 'string' && Number.isFinite(Date.parse(scanState.data.checked_at)) ? `Checked ${new Date(scanState.data.checked_at).toLocaleString('en-ZA')}.` : 'Scan timestamp unavailable.'} A clean lookup does not guarantee safety.</small>
         </div>}
       </div> : submitted && <div className="result-message" role="status">{result}</div>}
     </div>
