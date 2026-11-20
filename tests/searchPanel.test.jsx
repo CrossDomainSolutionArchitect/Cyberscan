@@ -36,3 +36,38 @@ it('BEH-013 times out widget initialization',async()=>{delete window.turnstile;f
 it('BEH-014 renders successful result',async()=>{fetchMock.mockResolvedValueOnce(success());start();submit();expect(await screen.findByText('No known threat indicators from completed checks')).toBeTruthy();});
 it('BEH-015 ignores stale response',async()=>{let resolve;fetchMock.mockImplementationOnce(()=>new Promise(r=>resolve=r));start();submit();await waitFor(()=>expect(fetchMock).toHaveBeenCalledTimes(1));fireEvent.change(input(),{target:{value:'https://example.net'}});await act(async()=>resolve(success()));expect(screen.queryByText('No known threat indicators from completed checks')).toBeNull();});
 });
+
+describe('Scan result response contract',()=>{
+  async function show(metadata){
+    fetchMock.mockResolvedValueOnce(response(200,{data:{verdict:'no_known_indicators',findings:[],...metadata}}));
+    start();submit();
+    await screen.findByText('No known threat indicators from completed checks');
+    return screen.getByText('No known threat indicators from completed checks').parentElement.textContent;
+  }
+  it('CONTRACT-FE-001 renders enriched metadata',async()=>{
+    const checked_at='2026-11-20T10:43:28.000Z';
+    const text=await show({summary:{hostname:'example.org'},checked_at,coverage:{providers_succeeded:1}});
+    expect(text).toContain('example.org · 1 reputation source(s) completed');
+    expect(text).toContain(new Date(checked_at).toLocaleString('en-ZA'));
+    expect(text).not.toContain('Invalid Date');
+  });
+  it('CONTRACT-FE-002 renders legacy metadata without fabrication',async()=>{
+    const text=await show({});
+    expect(text).toContain('Provider coverage details unavailable');
+    expect(text).toContain('Scan timestamp unavailable');
+    expect(text).not.toMatch(/Invalid Date|undefined|null|0 reputation|·/);
+  });
+  it.each([null,'invalid',123])('CONTRACT-FE-003 rejects invalid timestamp %s',async checked_at=>{
+    const text=await show({checked_at});
+    expect(text).toContain('Scan timestamp unavailable');
+    expect(text).not.toContain('Invalid Date');
+  });
+  it.each([null,-1,1.5,'1'])('CONTRACT-FE-004 rejects invalid provider count %s',async providers_succeeded=>{
+    expect(await show({coverage:{providers_succeeded}})).toContain('Provider coverage details unavailable');
+  });
+  it('CONTRACT-FE-005 preserves explicit zero and omits empty hostname',async()=>{
+    const text=await show({summary:{hostname:' '},coverage:{providers_succeeded:0}});
+    expect(text).toContain('0 reputation source(s) completed');
+    expect(text).not.toContain('·');
+  });
+});
