@@ -56,7 +56,18 @@ export async function customerRoute(request, env, path, deps = {}) {
   const t=result?.intelligence;
   const completed=result?.status==="completed" && t?.status==="completed" && typeof t.malicious==="boolean" && Array.isArray(t.threats) && t.threats.every(x=>typeof x==="string") && t.malicious===(t.threats.length>0);
   if (!completed) { await settleRequest(db,userId,id,null); return errorResponse("SCAN_NOT_COMPLETED","The scan could not be completed. No free search was consumed.",result?.status==="rejected"?422:503); }
-  const outcome={verdict:t.malicious?"malicious":"no_known_indicators",findings:t.threats.map(type=>({title:type,description:"Google Web Risk reported this threat category."})),coverage:{limitations:["A lookup without known threats does not prove a URL is safe."]},recommendations:["Avoid sharing sensitive information with untrusted websites."],};
+  const outcome={
+    verdict:t.malicious?"malicious":"no_known_indicators",
+    ...(typeof result.hostname==="string" && result.hostname.trim() ? {summary:{hostname:result.hostname}} : {}),
+    ...(typeof t.checkedAt==="string" && Number.isFinite(Date.parse(t.checkedAt)) ? {checked_at:t.checkedAt} : {}),
+    findings:t.threats.map(type=>({title:type,description:"Google Web Risk reported this threat category."})),
+    coverage:{
+      providers_succeeded:1,
+      ...(typeof t.provider==="string" && t.provider.trim() ? {providers:[{provider:t.provider,status:t.status}]} : {}),
+      limitations:["A lookup without known threats does not prove a URL is safe."]
+    },
+    recommendations:["Avoid sharing sensitive information with untrusted websites."]
+  };
   await settleRequest(db,userId,id,outcome);
   return successResponse({...outcome,entitlement:await allowance(db,userId)});
 }
