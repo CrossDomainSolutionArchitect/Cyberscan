@@ -7,6 +7,7 @@ export default {
   if (new URL(request.url).pathname !== "/test" || request.method !== "POST") return new Response("Not found",{status:404});
   const db=env.DB, a="user_test_"+crypto.randomUUID(), b="user_test_"+crypto.randomUUID();
   const checks=[];
+  const contractUser="user_test_"+crypto.randomUUID();
   const c="user_test_"+crypto.randomUUID();
   const testIp="synthetic-"+crypto.randomUUID();
   function check(name, condition){checks.push({name,passed:Boolean(condition)});}
@@ -62,6 +63,39 @@ export default {
    check("Failed request can retry",(await invoke(retry)).status===200 && calls===3);
    check("Replay after exhaustion",(await invoke(key)).status===200 && (await allowance(db,b)).remaining===0);
    check("Customer scope isolated",(await invoke(key,"https://example.org",false,a)).status===429);
+   const contractKey=crypto.randomUUID();
+   const contractUrl="https://example.org/private-path?token=synthetic-secret";
+   const checkedAt="2026-11-20T10:43:28.000Z";
+   let contractCalls=0;
+   const contractInvoke=(requestId,mode="clean",token="valid")=>customerRoute(new Request("https://test.invalid/v1/scans",{method:"POST",headers:{Authorization:"Bearer synthetic","Content-Type":"application/json","CF-Connecting-IP":"synthetic-contract-"+contractUser},body:JSON.stringify({type:"url",value:contractUrl,requestId,turnstileToken:token})}),testEnv,"/v1/scans",{verify:async()=>({userId:contractUser}),turnstile:async()=>({verified:true}),pipeline:async()=>{contractCalls++;return {status:mode==="incomplete"?"error":"completed",url:contractUrl,hostname:"example.org",intelligence:{provider:"google-web-risk",status:mode==="incomplete"?"unavailable":"completed",checkedAt,malicious:mode==="malicious",threats:mode==="malicious"?["MALWARE"]:[]}};}});
+   const firstContract=await contractInvoke(contractKey);
+   const contractData=(await firstContract.json()).data;
+   check("CONTRACT-BE-001 hostname",firstContract.status===200 && contractData?.summary?.hostname==="example.org");
+   check("CONTRACT-BE-002 timestamp",contractData?.checked_at===checkedAt);
+   check("CONTRACT-BE-003 provider",contractData?.coverage?.providers?.length===1 && contractData.coverage.providers[0].provider==="google-web-risk" && contractData.coverage.providers[0].status==="completed");
+   check("CONTRACT-BE-004 count",contractData?.coverage?.providers_succeeded===1);
+   const persisted=await db.prepare("SELECT outcome,status FROM scan_requests WHERE clerk_user_id=? AND request_key=?").bind(contractUser,contractKey).first();
+   const saved=JSON.parse(persisted?.outcome || "null");
+   const {entitlement:contractEntitlement,...publicOutcome}=contractData;
+   check("CONTRACT-BE-005 persistence",persisted?.status==="completed" && JSON.stringify(saved)===JSON.stringify(publicOutcome));
+   const replayResponse=await contractInvoke(contractKey,"clean","");
+   const replayData=(await replayResponse.json()).data;
+   check("CONTRACT-BE-006 replay metadata",replayResponse.status===200 && JSON.stringify(replayData)===JSON.stringify(contractData));
+   check("CONTRACT-BE-007 provider not repeated",contractCalls===1);
+   check("CONTRACT-BE-008 entitlement",contractEntitlement.remaining===2 && replayData?.entitlement?.remaining===2 && (await allowance(db,contractUser)).remaining===2);
+   const maliciousResponse=await contractInvoke(crypto.randomUUID(),"malicious");
+   const maliciousData=(await maliciousResponse.json()).data;
+   check("CONTRACT-BE-009 malicious findings",maliciousResponse.status===200 && maliciousData?.verdict==="malicious" && maliciousData?.findings?.some(x=>x.title==="MALWARE"));
+   check("CONTRACT-BE-010 no raw URL path or query",[JSON.stringify(contractData),persisted?.outcome,JSON.stringify(maliciousData)].every(x=>typeof x==="string" && !x.includes("private-path") && !x.includes("synthetic-secret")));
+   const legacy={verdict:saved.verdict,findings:saved.findings,coverage:{limitations:saved.coverage.limitations},recommendations:saved.recommendations};
+   await db.prepare("UPDATE scan_requests SET outcome=? WHERE clerk_user_id=? AND request_key=?").bind(JSON.stringify(legacy),contractUser,contractKey).run();
+   const legacyResponse=await contractInvoke(contractKey,"clean","");
+   const legacyData=(await legacyResponse.json()).data;
+   check("CONTRACT-BE-011 legacy replay",legacyResponse.status===200 && JSON.stringify(legacyData)===JSON.stringify({...legacy,entitlement:{limit:3,remaining:1}}) && contractCalls===2);
+   const incompleteKey=crypto.randomUUID();
+   const incompleteResponse=await contractInvoke(incompleteKey,"incomplete");
+   const incompleteRecord=await db.prepare("SELECT status,outcome FROM scan_requests WHERE clerk_user_id=? AND request_key=?").bind(contractUser,incompleteKey).first();
+   check("CONTRACT-BE-012 incomplete intelligence",incompleteResponse.status===503 && (await incompleteResponse.json()).error.code==="SCAN_NOT_COMPLETED" && (await allowance(db,contractUser)).remaining===1 && incompleteRecord?.status==="failed" && incompleteRecord.outcome===null);
    const rateId=crypto.randomUUID();
    const probe=await Promise.all(Array.from({length:21},()=>enforceRateLimit(env,"scanUser",rateId)));
    check("Scanner rate limit admits exactly twenty",probe.filter(x=>x===null).length===20 && probe.filter(x=>x?.status===429).length===1);
@@ -96,8 +130,8 @@ export default {
    check("Authentication flooding",sameWindow() && blocked.status===429 && (await blocked.json()).error.code==="RATE_LIMIT_EXCEEDED" && verifierCalls===1 && challengeCalls===0 && providerCalls===0);
   } catch(e){checks.push({name:"Integration execution",passed:false,error:e.message});}
   finally {
-   await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?,?)").bind(a,b,c).run();
-   await db.prepare("DELETE FROM users WHERE clerk_user_id IN (?,?,?)").bind(a,b,c).run();
+   await db.prepare("DELETE FROM scan_requests WHERE clerk_user_id IN (?,?,?,?)").bind(a,b,c,contractUser).run();
+   await db.prepare("DELETE FROM users WHERE clerk_user_id IN (?,?,?,?)").bind(a,b,c,contractUser).run();
   }
   const passed=checks.every(c=>c.passed);
   return Response.json({passed,checks},{status:passed?200:500});
