@@ -22,7 +22,8 @@ function fixture(overrides={}) {
       };
     }
   };
-  const env={DB:db,PAYSTACK_SECRET_KEY:"sk_test_example",CLERK_SECRET_KEY:"sk_example",...overrides};
+  const quota={idFromName:()=>({}),get:()=>({fetch:async()=>Response.json({allowed:true})})};
+  const env={DB:db,QUOTA_COUNTER:quota,PAYSTACK_SECRET_KEY:"sk_test_example",CLERK_SECRET_KEY:"sk_example",...overrides};
   return {env,writes};
 }
 const verify=async()=>({userId:"user_test",sessionId:"sess_test"});
