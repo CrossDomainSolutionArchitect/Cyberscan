@@ -2,7 +2,7 @@
 -- Prices are ZAR minor units. Never trust a price sent by the browser.
 CREATE TABLE billing_plans (
   code TEXT PRIMARY KEY NOT NULL CHECK (code IN ('basic','pro','enterprise')),
-  amount_kobo INTEGER NOT NULL CHECK (amount_kobo > 0),
+  amount_minor INTEGER NOT NULL CHECK (amount_minor > 0),
   currency TEXT NOT NULL DEFAULT 'ZAR' CHECK (currency = 'ZAR'),
   interval TEXT NOT NULL DEFAULT 'monthly' CHECK (interval = 'monthly'),
   scans_per_period INTEGER NOT NULL CHECK (scans_per_period > 0),
@@ -10,8 +10,8 @@ CREATE TABLE billing_plans (
   is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1)),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
--- Paystack's amount unit for ZAR is cents; retain a generic minor-unit column.
-INSERT INTO billing_plans (code,amount_kobo,scans_per_period) VALUES
+-- For ZAR, Paystack charges are represented in cents (minor units).
+INSERT INTO billing_plans (code,amount_minor,scans_per_period) VALUES
   ('basic',4000,30),
   ('pro',7000,100),
   ('enterprise',20000,500);
