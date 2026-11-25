@@ -11,10 +11,12 @@ export async function resolveVerifiedEmail(userId, clerkSecret, fetcher = fetch)
   if (typeof clerkSecret !== "string" || !clerkSecret.startsWith("sk_")) throw new Error("Clerk server credentials unavailable");
   const response = await fetcher(`${CLERK_API}/users/${encodeURIComponent(userId)}`, {
     headers: {Authorization:`Bearer ${clerkSecret}`},
-    redirect:"error",
+    redirect:"manual",
     signal:AbortSignal.timeout(8000)
   });
-  if (!response.ok) throw new Error("Clerk user lookup failed");
+  if ((response.status >= 300 && response.status < 400) || !response.ok) {
+    throw new Error("Clerk user lookup failed");
+  }
   const user = await response.json();
   if (user?.id !== userId || !Array.isArray(user.email_addresses)) throw new Error("Clerk identity mismatch");
   const email = user.email_addresses.find(e => e.id === user.primary_email_address_id && e.verification?.status === "verified");
@@ -69,10 +71,12 @@ export async function checkoutRoute(request, env, deps = {}) {
         reference,
         callback_url:"https://cyberscan.co.za/?payment=return"
       }),
-      redirect:"error",
+      redirect:"manual",
       signal:AbortSignal.timeout(10000)
     });
-    if (!response.ok) throw new Error("Paystack initialization failed");
+    if ((response.status >= 300 && response.status < 400) || !response.ok) {
+      throw new Error("Paystack initialization failed");
+    }
     const payload = await response.json();
     if (payload?.status !== true || payload.data?.reference !== reference) throw new Error("Paystack reference mismatch");
     const url = new URL(payload.data.authorization_url);

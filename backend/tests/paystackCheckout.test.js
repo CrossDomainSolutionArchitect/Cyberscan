@@ -82,3 +82,170 @@ test("Clerk email lookup requires matching user and verified primary address",as
   assert.equal(await resolveVerifiedEmail("user_test","sk_test",fetcher),"verified@example.org");
   await assert.rejects(()=>resolveVerifiedEmail("user_other","sk_test",fetcher));
 });
+
+// PAY-002 redirect compatibility regression tests
+
+const redirectStatuses = [301,302,303,307,308];
+
+test("Clerk email lookup uses manual redirect mode",async()=>{
+  let observedOptions;
+
+  const fetcher=async(_url,opts)=>{
+    observedOptions=opts;
+
+    return Response.json({
+      id:"user_test",
+      primary_email_address_id:"id1",
+      email_addresses:[{
+        id:"id1",
+        email_address:"verified@example.org",
+        verification:{status:"verified"}
+      }]
+    });
+  };
+
+  const email=await resolveVerifiedEmail(
+    "user_test","sk_test",fetcher
+  );
+
+  assert.equal(email,"verified@example.org");
+  assert.equal(observedOptions.redirect,"manual");
+});
+
+test("Clerk email lookup rejects upstream redirects",async()=>{
+  for(const status of redirectStatuses){
+    let calls=0;
+
+    const fetcher=async()=>{
+      calls++;
+
+      return new Response(null,{
+        status,
+        headers:{Location:"https://attacker.invalid/"}
+      });
+    };
+
+    await assert.rejects(
+      ()=>resolveVerifiedEmail("user_test","sk_test",fetcher),
+      /Clerk user lookup failed/
+    );
+
+    assert.equal(calls,1);
+  }
+});
+
+test("checkout rejects Clerk redirects before calling Paystack",async()=>{
+  for(const status of redirectStatuses){
+    const {env,writes}=fixture();
+    const calls=[];
+
+    const fetcher=async(url,opts)=>{
+      calls.push({url,opts});
+
+      return new Response(null,{
+        status,
+        headers:{Location:"https://attacker.invalid/"}
+      });
+    };
+
+    const res=await checkoutRoute(
+      request({plan:"basic"}),
+      env,
+      {verify,fetcher}
+    );
+
+    assert.equal(res.status,422);
+    assert.equal(
+      (await res.json()).error.code,
+      "VERIFIED_EMAIL_REQUIRED"
+    );
+
+    assert.equal(calls.length,1);
+    assert.equal(
+      calls[0].url,
+      "https://api.clerk.com/v1/users/user_test"
+    );
+    assert.equal(calls[0].opts.redirect,"manual");
+
+    assert.equal(
+      writes.some(w=>w.sql.includes("INSERT INTO billing_transactions")),
+      false
+    );
+  }
+});
+
+test("Paystack initialization uses manual redirect mode",async()=>{
+  const {env}=fixture();
+  let observedOptions;
+
+  const fetcher=async(url,opts)=>{
+    observedOptions=opts;
+    return fakePaystack(url,opts);
+  };
+
+  const res=await checkoutRoute(
+    request({plan:"basic"}),
+    env,
+    {verify,resolveEmail,fetcher}
+  );
+
+  assert.equal(res.status,200);
+  assert.equal(observedOptions.redirect,"manual");
+});
+
+test("checkout rejects Paystack upstream redirects",async()=>{
+  for(const status of redirectStatuses){
+    const {env}=fixture();
+    let calls=0;
+    let observedOptions;
+
+    const fetcher=async(_url,opts)=>{
+      calls++;
+      observedOptions=opts;
+
+      return new Response(null,{
+        status,
+        headers:{Location:"https://attacker.invalid/"}
+      });
+    };
+
+    const res=await checkoutRoute(
+      request({plan:"basic"}),
+      env,
+      {verify,resolveEmail,fetcher}
+    );
+
+    assert.equal(res.status,503);
+    assert.equal(
+      (await res.json()).error.code,
+      "CHECKOUT_UNAVAILABLE"
+    );
+
+    assert.equal(calls,1);
+    assert.equal(observedOptions.redirect,"manual");
+  }
+});
+
+test("Paystack redirects do not create billing transactions",async()=>{
+  for(const status of redirectStatuses){
+    const {env,writes}=fixture();
+
+    const fetcher=async()=>new Response(null,{
+      status,
+      headers:{Location:"https://attacker.invalid/"}
+    });
+
+    const res=await checkoutRoute(
+      request({plan:"basic"}),
+      env,
+      {verify,resolveEmail,fetcher}
+    );
+
+    assert.equal(res.status,503);
+
+    assert.equal(
+      writes.some(w=>w.sql.includes("INSERT INTO billing_transactions")),
+      false
+    );
+  }
+});
