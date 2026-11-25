@@ -1,4 +1,5 @@
 import { customerRoute } from "./services/customerRoutes.js";
+import { checkoutRoute } from "./services/checkoutRoutes.js";
 import {
   successResponse,
   errorResponse
@@ -39,6 +40,8 @@ export default {
             version: "1.0.0"
           });
         }
+      } else if (url.pathname === "/v1/billing/checkout") {
+        response = await checkoutRoute(request, env);
       } else if (["/v1/me", "/v1/scans"].includes(url.pathname)) {
         response = await customerRoute(request, env, url.pathname);
       } else {
